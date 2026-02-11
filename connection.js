@@ -1,0 +1,97 @@
+const makeWASocket = require('@whiskeysockets/baileys').default;
+const { DisconnectReason } = require('@whiskeysockets/baileys');
+const { useDatabaseAuthState, clearDatabaseAuthState } = require('./whatsapp-logic');
+const QRCode = require('qrcode');
+
+const whatsapp = {
+    sock: null,
+    qr: null,
+    status: 'disconnected',
+    promise: null
+};
+
+const getWhatsAppStatus = () => ({
+    status: whatsapp.status,
+    qr: whatsapp.qr
+});
+
+const connectWhatsApp = async (sessionId = 'default') => {
+    if (whatsapp.promise) return whatsapp.promise;
+    if (whatsapp.sock && whatsapp.status === 'connected') return whatsapp.sock;
+
+    whatsapp.promise = (async () => {
+        try {
+            whatsapp.status = 'connecting';
+            whatsapp.qr = null;
+
+            const { state, saveCreds } = await useDatabaseAuthState(sessionId);
+
+            const sock = makeWASocket({
+                auth: state,
+                printQRInTerminal: false,
+                syncFullHistory: false, // Don't sync old messages to keep it fast
+                markOnlineOnConnect: false, // Don't show "Online" status unnecessarily
+                shouldIgnoreJids: (jid) => jid.endsWith('@broadcast') || jid.endsWith('@newsletter'), // Ignore noisy JIDs
+                connectTimeoutMs: 60000,
+                defaultQueryTimeoutMs: 60000,
+            });
+
+            whatsapp.sock = sock;
+
+            sock.ev.on('connection.update', async (update) => {
+                const { connection, lastDisconnect, qr } = update;
+
+                if (qr) {
+                    whatsapp.qr = await QRCode.toDataURL(qr);
+                }
+
+                if (connection === 'close') {
+                    const statusCode = lastDisconnect?.error?.output?.statusCode;
+                    const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+
+                    console.log(`Connection closed (Status: ${statusCode}). Reconnecting: ${shouldReconnect}`);
+
+                    whatsapp.status = 'disconnected';
+                    whatsapp.qr = null;
+
+                    if (statusCode === DisconnectReason.loggedOut || statusCode === 401 || statusCode === 403) {
+                        console.log('Fatal session error. Clearing credentials...');
+                        whatsapp.sock = null;
+                        await clearDatabaseAuthState(sessionId).catch(e => console.error('Failed to clear DB auth state:', e));
+                    } else if (shouldReconnect) {
+                        console.log('Attempting auto-reconnect...');
+                        setTimeout(() => connectWhatsApp(sessionId), 3000);
+                    }
+                } else if (connection === 'open') {
+                    console.log('Opened connection');
+                    whatsapp.status = 'connected';
+                    whatsapp.qr = null;
+                }
+            });
+
+            sock.ev.on('creds.update', saveCreds);
+
+            return sock;
+        } finally {
+            whatsapp.promise = null;
+        }
+    })();
+
+    return whatsapp.promise;
+};
+
+const disconnectWhatsApp = async (sessionId = 'default') => {
+    if (whatsapp.sock) {
+        try {
+            await whatsapp.sock.logout();
+        } catch (e) {
+            console.error('Logout error:', e);
+        }
+    }
+    await clearDatabaseAuthState(sessionId);
+    whatsapp.sock = null;
+    whatsapp.status = 'disconnected';
+    whatsapp.qr = null;
+};
+
+module.exports = { connectWhatsApp, disconnectWhatsApp, getWhatsAppStatus, whatsapp };
