@@ -1,26 +1,21 @@
 import { useState, useEffect } from 'react';
 import {
     QrCode,
-    Link as LinkIcon,
     Send,
     Users,
     Image as ImageIcon,
-    Video as VideoIcon,
     LogOut,
-    RotateCcw,
-    CheckCircle2,
     Loader2,
     Search,
     AlertCircle,
-    X
+    X,
+    CheckCircle2
 } from 'lucide-react';
 import styles from './BroadcastTool.module.css';
 
 const API_KEY = import.meta.env.VITE_API_KEY || '';
 
-const BroadcastTool = () => {
-    const [status, setStatus] = useState('disconnected'); // disconnected, connecting, connected
-    const [qr, setQr] = useState(null);
+const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
     const [groups, setGroups] = useState([]);
     const [selectedGroups, setSelectedGroups] = useState([]);
     const [message, setMessage] = useState('');
@@ -31,63 +26,15 @@ const BroadcastTool = () => {
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Poll for status and QR
-    useEffect(() => {
-        let interval;
-        if (status === 'connecting' || status === 'disconnected') {
-            interval = setInterval(fetchStatus, 3000);
-        }
-        return () => clearInterval(interval);
-    }, [status]);
-
     // Fetch groups when connected
     useEffect(() => {
         if (status === 'connected') {
             fetchGroups();
+        } else {
+            setGroups([]);
+            setSelectedGroups([]);
         }
     }, [status]);
-
-    const fetchStatus = async () => {
-        try {
-            const res = await fetch('/status');
-            const data = await res.json();
-            if (data && data.status) {
-                setStatus(data.status);
-                setQr(data.qr);
-            }
-        } catch (err) {
-            console.error('Status check failed', err);
-        }
-    };
-
-    const handleConnect = async () => {
-        setError(null);
-        try {
-            await fetch('/connect', {
-                method: 'POST',
-                headers: { 'x-api-key': API_KEY }
-            });
-            setStatus('connecting');
-        } catch (err) {
-            setError('Failed to initiate connection');
-        }
-    };
-
-    const handleLogout = async () => {
-        if (!confirm('Are you sure you want to disconnect WhatsApp?')) return;
-        try {
-            await fetch('/logout', {
-                method: 'POST',
-                headers: { 'x-api-key': API_KEY }
-            });
-            setStatus('disconnected');
-            setQr(null);
-            setGroups([]);
-        } catch (err) {
-            setError('Logout failed');
-        }
-    };
-
 
     const fetchGroups = async () => {
         setLoadingGroups(true);
@@ -140,7 +87,7 @@ const BroadcastTool = () => {
                 body: formData
             });
             const data = await res.json();
-            alert('Broadcast finished! Check results in console.');
+            alert('Broadcast finished!');
             console.log(data.results);
         } catch (err) {
             setError('Failed to send broadcast');
@@ -155,24 +102,6 @@ const BroadcastTool = () => {
 
     return (
         <div className={styles.card}>
-            {/* Header Section */}
-            <div className={styles.cardHeader}>
-                <div className={styles.statusInfo}>
-                    <div className={`${styles.statusDot} ${styles[status || 'disconnected']}`} />
-                    <span className={styles.statusText}>
-                        WhatsApp: {(status || 'disconnected').charAt(0).toUpperCase() + (status || 'disconnected').slice(1)}
-                    </span>
-                </div>
-                <div className={styles.headerActions}>
-                    {status === 'connected' && (
-                        <button onClick={handleLogout} className={styles.logoutBtn}>
-                            <LogOut size={16} />
-                            Logout
-                        </button>
-                    )}
-                </div>
-            </div>
-
             {error && (
                 <div className={styles.errorAlert}>
                     <AlertCircle size={18} />
@@ -185,7 +114,7 @@ const BroadcastTool = () => {
                     <QrCode size={48} className={styles.icon} />
                     <h3>Connect WhatsApp</h3>
                     <p>Link your device to start broadcasting marketing messages.</p>
-                    <button onClick={handleConnect} className={styles.primaryBtn}>
+                    <button onClick={onConnect} className={styles.primaryBtn}>
                         Get QR Code
                     </button>
                 </div>
@@ -215,7 +144,7 @@ const BroadcastTool = () => {
                     {/* Left: Configuration */}
                     <div className={styles.configArea}>
                         <div className={styles.formGroup}>
-                            <label>Campaign Poster (Image/Video)</label>
+                            <label>Campaign Poster</label>
                             <div className={styles.fileUpload}>
                                 {preview ? (
                                     <div className={styles.preview}>
@@ -232,13 +161,13 @@ const BroadcastTool = () => {
                                     <label className={styles.dropzone}>
                                         <input type="file" hidden onChange={handleFileChange} accept="image/*,video/*" />
                                         <ImageIcon size={24} />
-                                        <span>Click to upload poster</span>
+                                        <span>Upload poster</span>
                                     </label>
                                 )}
                             </div>
                         </div>
 
-                        <div className={styles.formGroup}>
+                        <div className={styles.formGroup} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                             <label>Message / Caption</label>
                             <textarea
                                 value={message}
@@ -248,24 +177,30 @@ const BroadcastTool = () => {
                             />
                         </div>
 
-                        <button
-                            onClick={handleSend}
-                            disabled={sending || selectedGroups.length === 0}
-                            className={styles.sendBtn}
-                        >
-                            {sending ? (
-                                <><Loader2 className={styles.spinner} /> Sending...</>
-                            ) : (
-                                <><Send size={18} /> Send Broadcast ({selectedGroups.length})</>
-                            )}
-                        </button>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button
+                                onClick={handleSend}
+                                disabled={sending || selectedGroups.length === 0}
+                                className={styles.sendBtn}
+                                style={{ flex: 2 }}
+                            >
+                                {sending ? (
+                                    <><Loader2 className={styles.spinner} /> Sending...</>
+                                ) : (
+                                    <><Send size={18} /> Send Broadcast ({selectedGroups.length})</>
+                                )}
+                            </button>
+                            <button onClick={onLogout} className={styles.logoutBtn} style={{ flex: 1 }}>
+                                <LogOut size={16} /> Logout
+                            </button>
+                        </div>
                     </div>
 
                     {/* Right: Group Selection */}
                     <div className={styles.selectionArea}>
                         <div className={styles.selectionHeader}>
                             <label><Users size={16} /> Select Groups</label>
-                            <span className={styles.count}>{selectedGroups.length} Selected</span>
+                            <span className={styles.count}>{selectedGroups.length}</span>
                         </div>
 
                         <div className={styles.searchBox}>

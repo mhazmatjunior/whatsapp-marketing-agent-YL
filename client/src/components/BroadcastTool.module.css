@@ -1,17 +1,17 @@
 :root {
-    --primary-color: #d32f2f;
-    --primary-hover: #b71c1c;
-    --secondary-color: #7b1fa2;
-    --surface-color: #1a1a1a;
-    --background-color: #0f172a;
-    --border-color: #333;
+    --primary-color: #E23E3E;
+    --primary-hover: #ff4d4d;
+    --secondary-color: #121212;
+    --surface-color: #0A0A0A;
+    --background-color: #000000;
+    --border-color: #1A1A1A;
     --text-primary: #ffffff;
-    --text-secondary: #94a3b8;
-    --hover-color: rgba(255, 255, 255, 0.05);
+    --text-secondary: #666666;
+    --hover-color: rgba(255, 255, 255, 0.03);
     --warning-color: #f59e0b;
     --border-radius-sm: 8px;
-    --border-radius-md: 12px;
-    --border-radius-lg: 20px;
+    --border-radius-md: 14px;
+    --border-radius-lg: 24px;
 }
 
 .card {
@@ -20,8 +20,12 @@
     border-radius: var(--border-radius-lg);
     overflow: hidden;
     position: relative;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 .cardHeader {
@@ -177,13 +181,18 @@
 /* Broadcast Grid */
 .broadcastGrid {
     display: grid;
-    grid-template-columns: 1fr 400px;
-    min-height: 500px;
+    grid-template-columns: 1fr 380px;
+    flex: 1;
+    min-height: 0;
 }
 
 .configArea {
     padding: 24px;
     border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
 }
 
 .selectionArea {
@@ -191,6 +200,7 @@
     background: rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
+    min-height: 0;
 }
 
 .formGroup {
@@ -258,14 +268,17 @@
 
 .textarea {
     width: 100%;
-    min-height: 150px;
-    background: rgba(255, 255, 255, 0.05);
+    flex: 1;
+    min-height: 100px;
+    background: rgba(255, 255, 255, 0.02);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-md);
-    padding: 12px;
+    padding: 16px;
     color: white;
     font-family: inherit;
-    resize: vertical;
+    resize: none;
+    font-size: 14px;
+    line-height: 1.5;
 }
 
 .textarea:focus {
@@ -352,7 +365,6 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-height: 400px;
     padding-right: 4px;
 }
 
