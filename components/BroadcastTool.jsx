@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import {
     QrCode,
@@ -12,8 +14,6 @@ import {
     CheckCircle2
 } from 'lucide-react';
 import styles from './BroadcastTool.module.css';
-
-const API_KEY = import.meta.env.VITE_API_KEY || '';
 
 const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
     const [groups, setGroups] = useState([]);
@@ -39,8 +39,8 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
     const fetchGroups = async () => {
         setLoadingGroups(true);
         try {
-            const res = await fetch('/groups', {
-                headers: { 'x-api-key': API_KEY }
+            const res = await fetch('/api/groups', {
+                headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY }
             });
             if (!res.ok) throw new Error('Failed to fetch groups');
             const data = await res.json();
@@ -81,11 +81,12 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
         if (file) formData.append('file', file);
 
         try {
-            const res = await fetch('/send', {
+            const res = await fetch('/api/send', {
                 method: 'POST',
-                headers: { 'x-api-key': API_KEY },
+                headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY },
                 body: formData
             });
+            if (!res.ok) throw new Error('Failed to send broadcast');
             const data = await res.json();
             alert('Broadcast finished!');
             console.log(data.results);
@@ -96,9 +97,9 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
         }
     };
 
-    const filteredGroups = groups.filter(g =>
-        g.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredGroups = groups
+        .filter(g => g.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        .slice(0, 5);
 
     return (
         <div className={styles.card}>
@@ -108,6 +109,21 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
                     {error}
                 </div>
             )}
+
+            <div className={styles.metricsGrid}>
+                <div className={`${styles.metricCard} ${styles.primary}`}>
+                    <span className={styles.metricTitle}>Connected Devices</span>
+                    <span className={styles.metricValue}>{status === 'connected' ? '1' : '0'}</span>
+                </div>
+                <div className={styles.metricCard}>
+                    <span className={styles.metricTitle}>Total Groups</span>
+                    <span className={styles.metricValue}>{groups.length}</span>
+                </div>
+                <div className={styles.metricCard}>
+                    <span className={styles.metricTitle}>Selected Groups</span>
+                    <span className={styles.metricValue}>{selectedGroups.length}</span>
+                </div>
+            </div>
 
             {status === 'disconnected' && !qr && (
                 <div className={styles.emptyState}>
@@ -141,7 +157,6 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
 
             {status === 'connected' && (
                 <div className={styles.broadcastGrid}>
-                    {/* Left: Configuration */}
                     <div className={styles.configArea}>
                         <div className={styles.formGroup}>
                             <label>Campaign Poster</label>
@@ -196,7 +211,6 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
                         </div>
                     </div>
 
-                    {/* Right: Group Selection */}
                     <div className={styles.selectionArea}>
                         <div className={styles.selectionHeader}>
                             <label><Users size={16} /> Select Groups</label>

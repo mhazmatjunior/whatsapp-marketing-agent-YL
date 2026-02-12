@@ -1,0 +1,80 @@
+:root {
+    --primary-color: #d32f2f;
+    --primary-hover: #b71c1c;
+    --secondary-color: #7b1fa2;
+    --surface-color: #121212;
+    --background-color: #000000;
+    --border-color: #1e1e1e;
+    --text-primary: #ffffff;
+    --text-secondary: #94a3b8;
+    --hover-color: rgba(255, 255, 255, 0.05);
+    --warning-color: #f59e0b;
+    --success-color: #22c55e;
+    --grey-color: #666666;
+    --border-radius-sm: 8px;
+    --border-radius-md: 12px;
+    --border-radius-lg: 20px;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-primary);
+    /* Removed overflow: hidden to allow scrolling */
+}
+
+.app-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+.app-header {
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.status-dot.disconnected {
+    background-color: var(--grey-color);
+}
+
+.status-dot.connecting {
+    background-color: var(--warning-color);
+    animation: pulse 1.5s infinite;
+}
+
+.status-dot.connected {
+    background-color: var(--success-color);
+    box-shadow: 0 0 10px var(--success-color);
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+.app-header p {
+    color: #94a3b8;
+    margin-top: 10px;
+}
