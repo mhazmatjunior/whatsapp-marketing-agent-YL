@@ -27,26 +27,34 @@ export default function Home() {
 
     const handleConnect = async () => {
         try {
-            await fetch('/api/connect', {
+            const res = await fetch('/api/connect', {
                 method: 'POST',
                 headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY }
             });
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.error || 'Failed to connect');
+            }
             fetchStatus();
         } catch (err) {
-            alert('Failed to initiate connection');
+            alert(`Connection Error: ${err.message}`);
         }
     };
 
     const handleLogout = async () => {
         if (!confirm('Are you sure you want to logout?')) return;
         try {
-            await fetch('/api/logout', {
+            const res = await fetch('/api/logout', {
                 method: 'POST',
                 headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY }
             });
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.error || 'Failed to logout');
+            }
             fetchStatus();
         } catch (err) {
-            alert('Failed to logout');
+            alert(`Logout Error: ${err.message}`);
         }
     };
 
