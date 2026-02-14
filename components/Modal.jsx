@@ -16,18 +16,32 @@ const Modal = ({
     cancelText = 'Cancel'
 }) => {
     const [mounted, setMounted] = useState(false);
+    const [container] = useState(() => (typeof document !== 'undefined' ? document.createElement('div') : null));
 
     useEffect(() => {
         setMounted(true);
+        if (container) {
+            document.body.appendChild(container);
+        }
+        return () => {
+            if (container && document.body.contains(container)) {
+                document.body.removeChild(container);
+            }
+        };
+    }, [container]);
+
+    useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
         }
         return () => {
             document.body.style.overflow = 'unset';
         };
     }, [isOpen]);
 
-    if (!isOpen || !mounted) return null;
+    if (!isOpen || !mounted || !container) return null;
 
     const icons = {
         info: <AlertCircle className={styles.infoIcon} />,
@@ -73,7 +87,7 @@ const Modal = ({
         </div>
     );
 
-    return createPortal(modalContent, document.body);
+    return createPortal(modalContent, container);
 };
 
 export default Modal;

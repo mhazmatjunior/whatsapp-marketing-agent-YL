@@ -280,7 +280,7 @@ export default function Home() {
                     </div>
                 </div>
             </header>
-            <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 <BroadcastTool
                     status={statusData.status}
                     qr={statusData.qr}

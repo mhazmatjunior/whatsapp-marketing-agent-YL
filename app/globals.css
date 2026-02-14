@@ -70,8 +70,7 @@ h4 {
 }
 
 .app-container {
-    width: 100%;
-    max-width: 100%;
+    width: 100vw;
     height: 100dvh;
     padding: 20px;
     display: flex;
@@ -80,7 +79,7 @@ h4 {
     box-sizing: border-box;
     position: relative;
     overflow: hidden;
-    /* Lock the frame to window size */
+    /* Strict window lock */
 }
 
 .app-header {
@@ -176,9 +175,10 @@ h4 {
     }
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - High Visibility for Elite App */
 ::-webkit-scrollbar {
-    width: 6px;
+    width: 10px;
+    height: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -186,12 +186,15 @@ h4 {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--surface-muted);
+    background: #2d3748;
+    /* Brighter slate for visibility */
     border-radius: 10px;
+    border: 2px solid var(--bg-charcoal);
+    /* Contrast border */
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--primary-indigo-muted);
+    background: var(--primary-indigo);
 }
 
 /* Themed Buttons */

@@ -10,13 +10,15 @@
     display: flex;
     flex-direction: column;
     flex: 1;
-    max-width: 1400px;
-    /* Standardizing dashboad width */
     width: 100%;
+    max-width: 100%;
+    /* Full screen width minus padding */
     margin: 0 auto;
-    /* Horizontal centering */
     position: relative;
     overflow: hidden;
+    /* Grid handles its own scroll */
+    min-height: 0;
+    /* Ensures it doesn't expand past main */
     animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -45,10 +47,9 @@
 .broadcastGrid {
     display: grid;
     grid-template-columns: 1fr 320px;
-    /* Slimmer sidebar to remove unused space */
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    /* Critical for internal flex scrolling */
 }
 
 .configArea {
@@ -57,9 +58,9 @@
     flex-direction: column;
     gap: 16px;
     overflow-y: auto;
-    /* Internal scroll only when needed */
     flex: 1;
-    /* Take up all space */
+    height: 100%;
+    min-height: 0;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.01) 0%, transparent 100%);
 }
 
@@ -82,13 +83,25 @@
 
 .selectionArea {
     padding: 20px;
-    background: rgba(2, 6, 23, 0.3);
+    padding-right: 12px;
+    /* Leave room for scrollbar */
+    background: rgba(2, 6, 23, 0.4);
     border-left: 1px solid var(--border-premium);
     display: flex;
     flex-direction: column;
     gap: 16px;
-    overflow-y: auto;
-    /* Internal scroll for recipient list */
+    overflow-y: scroll;
+    /* Force track for awareness */
+    height: 100%;
+    max-height: 100%;
+    /* Fill but don't exceed parent */
+    min-height: 0;
+    /* Ensures the area is constrained so scrollbar appears */
+}
+
+.selectionArea::-webkit-scrollbar-track {
+    background: rgba(2, 6, 23, 0.2);
+    border-radius: 10px;
 }
 
 /* Metrics */
@@ -369,14 +382,10 @@
 }
 
 .groupList {
-    flex: 1;
-    overflow-y: auto;
-    padding-right: 8px;
     display: flex;
     flex-direction: column;
     gap: 8px;
     min-height: 0;
-    /* Allows shrinking */
 }
 
 .loadingList,
@@ -429,8 +438,12 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    max-height: 150px;
+    max-height: 40vh;
+    /* Grow up to 40% of viewport */
     overflow-y: auto;
+    /* Only scroll if it hits the limit */
+    transition: all 0.3s ease;
+    /* Smooth growth */
 }
 
 .chip {
