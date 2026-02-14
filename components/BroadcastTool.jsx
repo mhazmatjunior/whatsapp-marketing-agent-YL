@@ -11,9 +11,14 @@ import {
     Search,
     AlertCircle,
     X,
-    CheckCircle2
+    CheckCircle2,
+    FileText,
+    Video,
+    File
 } from 'lucide-react';
 import styles from './BroadcastTool.module.css';
+
+import Modal from './Modal';
 
 const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
     const [groups, setGroups] = useState([]);
@@ -25,6 +30,13 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
     const [loadingGroups, setLoadingGroups] = useState(false);
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Modal State
+    const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'info' });
+
+    const showModal = (title, message, type = 'info') => {
+        setModal({ isOpen: true, title, message, type });
+    };
 
     // Fetch groups when connected
     useEffect(() => {
@@ -69,8 +81,8 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
     };
 
     const handleSend = async () => {
-        if (selectedGroups.length === 0) return alert('Select at least one group');
-        if (!message && !file) return alert('Message or image is required');
+        if (selectedGroups.length === 0) return showModal('Recipient Required', 'Please select at least one marketing group.');
+        if (!message && !file) return showModal('Content Required', 'Please provide a message or a poster to broadcast.');
 
         setSending(true);
         setError(null);
@@ -88,7 +100,15 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
             });
             if (!res.ok) throw new Error('Failed to send broadcast');
             const data = await res.json();
-            alert('Broadcast finished!');
+            showModal('Broadcast Complete', 'Your campaign has been successfully deployed to all selected groups!', 'success');
+
+            // Clear state for clean slate
+            setMessage('');
+            setFile(null);
+            setPreview(null);
+            setSearchQuery('');
+            setSelectedGroups([]);
+
             console.log(data.results);
         } catch (err) {
             setError('Failed to send broadcast');
@@ -110,20 +130,7 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
                 </div>
             )}
 
-            <div className={styles.metricsGrid}>
-                <div className={`${styles.metricCard} ${styles.primary}`}>
-                    <span className={styles.metricTitle}>Connected Devices</span>
-                    <span className={styles.metricValue}>{status === 'connected' ? '1' : '0'}</span>
-                </div>
-                <div className={styles.metricCard}>
-                    <span className={styles.metricTitle}>Total Groups</span>
-                    <span className={styles.metricValue}>{groups.length}</span>
-                </div>
-                <div className={styles.metricCard}>
-                    <span className={styles.metricTitle}>Selected Groups</span>
-                    <span className={styles.metricValue}>{selectedGroups.length}</span>
-                </div>
-            </div>
+
 
             {status === 'disconnected' && !qr && (
                 <div className={styles.emptyState}>
@@ -158,25 +165,48 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
             {status === 'connected' && (
                 <div className={styles.broadcastGrid}>
                     <div className={styles.configArea}>
+                        <div className={styles.metricsGrid}>
+                            <div className={`${styles.metricCard} ${styles.primary}`}>
+                                <span className={styles.metricTitle}>Connected Devices</span>
+                                <span className={styles.metricValue}>{status === 'connected' ? '1' : '0'}</span>
+                            </div>
+                            <div className={styles.metricCard}>
+                                <span className={styles.metricTitle}>Total Groups</span>
+                                <span className={styles.metricValue}>{groups.length}</span>
+                            </div>
+                        </div>
+
                         <div className={styles.formGroup}>
-                            <label>Campaign Poster</label>
+                            <label>Campaign Attachment</label>
                             <div className={styles.fileUpload}>
-                                {preview ? (
-                                    <div className={styles.preview}>
-                                        {file?.type.startsWith('video/') ? (
-                                            <video src={preview} controls />
-                                        ) : (
-                                            <img src={preview} alt="Preview" />
-                                        )}
+                                {file ? (
+                                    <div className={styles.fileSelected}>
+                                        <div className={styles.fileInfo}>
+                                            {file.type.startsWith('image/') ? (
+                                                <ImageIcon size={20} className={styles.fileIcon} />
+                                            ) : file.type.startsWith('video/') ? (
+                                                <Video size={20} className={styles.fileIcon} />
+                                            ) : (
+                                                <File size={20} className={styles.fileIcon} />
+                                            )}
+                                            <div className={styles.fileMeta}>
+                                                <span className={styles.fileName}>{file.name}</span>
+                                                <span className={styles.fileSize}>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                                            </div>
+                                        </div>
                                         <button onClick={() => { setFile(null); setPreview(null); }} className={styles.clearFile}>
-                                            <X size={14} /> Clear
+                                            <X size={14} /> Remove
                                         </button>
                                     </div>
                                 ) : (
                                     <label className={styles.dropzone}>
-                                        <input type="file" hidden onChange={handleFileChange} accept="image/*,video/*" />
-                                        <ImageIcon size={24} />
-                                        <span>Upload poster</span>
+                                        <input type="file" hidden onChange={handleFileChange} />
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <ImageIcon size={20} />
+                                            <Video size={20} />
+                                            <FileText size={20} />
+                                        </div>
+                                        <span>Upload media or document</span>
                                     </label>
                                 )}
                             </div>
@@ -213,9 +243,28 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
 
                     <div className={styles.selectionArea}>
                         <div className={styles.selectionHeader}>
-                            <label><Users size={16} /> Select Groups</label>
+                            <label><Users size={16} /> Recipients</label>
                             <span className={styles.count}>{selectedGroups.length}</span>
                         </div>
+
+                        {/* Selected Groups Chips */}
+                        {selectedGroups.length > 0 && (
+                            <div className={styles.selectedList}>
+                                {groups
+                                    .filter(g => selectedGroups.includes(g.id))
+                                    .map(group => (
+                                        <div key={group.id} className={styles.chip}>
+                                            <span>{group.name}</span>
+                                            <button
+                                                onClick={() => toggleGroup(group.id)}
+                                                className={styles.removeChip}
+                                            >
+                                                <X size={12} />
+                                            </button>
+                                        </div>
+                                    ))}
+                            </div>
+                        )}
 
                         <div className={styles.searchBox}>
                             <Search size={16} />
@@ -230,29 +279,42 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
                         <div className={styles.groupList}>
                             {loadingGroups ? (
                                 <div className={styles.loadingList}>Fetching groups...</div>
-                            ) : filteredGroups.length > 0 ? (
-                                filteredGroups.map(group => (
-                                    <div
-                                        key={group.id}
-                                        className={`${styles.groupItem} ${selectedGroups.includes(group.id) ? styles.selected : ''}`}
-                                        onClick={() => toggleGroup(group.id)}
-                                    >
-                                        <div className={styles.groupInfo}>
-                                            <span className={styles.groupName}>{group.name}</span>
-                                            <span className={styles.groupMeta}>{group.participants} participants</span>
-                                        </div>
-                                        <div className={styles.checkbox}>
-                                            {selectedGroups.includes(group.id) && <CheckCircle2 size={18} />}
-                                        </div>
-                                    </div>
-                                ))
                             ) : (
-                                <div className={styles.emptyList}>No groups found</div>
+                                groups
+                                    .filter(g =>
+                                        !selectedGroups.includes(g.id) &&
+                                        g.name.toLowerCase().includes(searchQuery.toLowerCase())
+                                    )
+                                    .slice(0, 5)
+                                    .map(group => (
+                                        <div
+                                            key={group.id}
+                                            className={styles.groupItem}
+                                            onClick={() => toggleGroup(group.id)}
+                                        >
+                                            <div className={styles.groupInfo}>
+                                                <span className={styles.groupName}>{group.name}</span>
+                                            </div>
+                                            <div className={styles.addItem}>
+                                                <CheckCircle2 size={16} className={styles.addIcon} />
+                                            </div>
+                                        </div>
+                                    ))
+                            )}
+                            {!loadingGroups && groups.filter(g => !selectedGroups.includes(g.id) && g.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                                <div className={styles.emptyList}>No matching groups</div>
                             )}
                         </div>
                     </div>
                 </div>
             )}
+            <Modal
+                isOpen={modal.isOpen}
+                onClose={() => setModal({ ...modal, isOpen: false })}
+                title={modal.title}
+                message={modal.message}
+                type={modal.type}
+            />
         </div>
     );
 };

@@ -1,21 +1,18 @@
-import { disconnectWhatsApp } from '../../../lib/whatsapp';
+import { disconnectWhatsApp } from '@/lib/whatsapp';
+import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
 
-const validateApiKey = (req) => {
-    const apiKey = req.headers.get('x-api-key');
-    if (process.env.API_KEY && apiKey !== process.env.API_KEY) {
-        return false;
-    }
-    return true;
-};
-
 export async function POST(req) {
-    if (!validateApiKey(req)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await auth();
+    if (!session) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+    const apiKey = req.headers.get('x-api-key');
+    if (apiKey !== process.env.API_KEY) {
+        return NextResponse.json({ error: 'Invalid API Key' }, { status: 403 });
     }
 
     try {
-        await disconnectWhatsApp();
+        await disconnectWhatsApp(session.user.id);
         return NextResponse.json({ message: 'Logged out successfully' });
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });

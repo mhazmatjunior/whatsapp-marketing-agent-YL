@@ -1,25 +1,23 @@
-import { whatsapp } from '../../../lib/whatsapp';
+import { wa_sessions } from '@/lib/whatsapp';
+import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
 
-const validateApiKey = (req) => {
-    const apiKey = req.headers.get('x-api-key');
-    if (process.env.API_KEY && apiKey !== process.env.API_KEY) {
-        return false;
-    }
-    return true;
-};
-
 export async function GET(req) {
-    if (!validateApiKey(req)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await auth();
+    if (!session) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+    const apiKey = req.headers.get('x-api-key');
+    if (apiKey !== process.env.API_KEY) {
+        return NextResponse.json({ error: 'Invalid API Key' }, { status: 403 });
     }
 
-    if (!whatsapp.sock || whatsapp.status !== 'connected') {
+    const wa_session = wa_sessions.get(session.user.id);
+    if (!wa_session?.sock || wa_session.status !== 'connected') {
         return NextResponse.json({ error: 'WhatsApp not connected' }, { status: 400 });
     }
 
     try {
-        const groups = await whatsapp.sock.groupFetchAllParticipating();
+        const groups = await wa_session.sock.groupFetchAllParticipating();
         const result = Object.values(groups).map(g => ({
             id: g.id,
             name: g.subject,

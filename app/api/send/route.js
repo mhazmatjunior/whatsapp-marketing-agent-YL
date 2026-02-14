@@ -1,20 +1,18 @@
-import { whatsapp } from '../../../lib/whatsapp';
+import { wa_sessions } from '@/lib/whatsapp';
+import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
 
-const validateApiKey = (req) => {
-    const apiKey = req.headers.get('x-api-key');
-    if (process.env.API_KEY && apiKey !== process.env.API_KEY) {
-        return false;
-    }
-    return true;
-};
-
 export async function POST(req) {
-    if (!validateApiKey(req)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await auth();
+    if (!session) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+    const apiKey = req.headers.get('x-api-key');
+    if (apiKey !== process.env.API_KEY) {
+        return NextResponse.json({ error: 'Invalid API Key' }, { status: 403 });
     }
 
-    if (!whatsapp.sock || whatsapp.status !== 'connected') {
+    const wa_session = wa_sessions.get(session.user.id);
+    if (!wa_session?.sock || wa_session.status !== 'connected') {
         return NextResponse.json({ error: 'WhatsApp not connected' }, { status: 400 });
     }
 
@@ -30,20 +28,33 @@ export async function POST(req) {
             try {
                 if (file && file instanceof File) {
                     const buffer = Buffer.from(await file.arrayBuffer());
-                    await whatsapp.sock.sendMessage(jid, {
-                        [file.type.startsWith('video/') ? 'video' : 'image']: buffer,
-                        caption: message,
-                        mimetype: file.type
-                    });
+                    const isImage = file.type.startsWith('image/');
+                    const isVideo = file.type.startsWith('video/');
+
+                    const messageContent = {};
+                    if (isImage) {
+                        messageContent.image = buffer;
+                        messageContent.caption = message;
+                    } else if (isVideo) {
+                        messageContent.video = buffer;
+                        messageContent.caption = message;
+                    } else {
+                        // Handle as Document (PDF, ZIP, DOCX, etc.)
+                        messageContent.document = buffer;
+                        messageContent.fileName = file.name;
+                        messageContent.mimetype = file.type;
+                        messageContent.caption = message;
+                    }
+
+                    await wa_session.sock.sendMessage(jid, messageContent);
                 } else {
-                    await whatsapp.sock.sendMessage(jid, { text: message });
+                    await wa_session.sock.sendMessage(jid, { text: message });
                 }
                 results.push({ jid, status: 'sent' });
             } catch (error) {
                 console.error(`Failed to send to ${jid}:`, error);
                 results.push({ jid, status: 'failed', error: error.message });
             }
-            // Small delay to prevent spam detection
             await new Promise(r => setTimeout(r, 1000));
         }
 

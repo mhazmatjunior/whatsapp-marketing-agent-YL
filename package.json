@@ -9,14 +9,17 @@
         "lint": "next lint"
     },
     "dependencies": {
+        "@auth/drizzle-adapter": "^1.11.1",
         "@neondatabase/serverless": "^1.0.2",
         "@whiskeysockets/baileys": "^7.0.0-rc.9",
+        "bcryptjs": "^3.0.3",
         "bufferutil": "^4.1.0",
         "clsx": "^2.1.1",
         "dotenv": "^16.4.7",
         "drizzle-orm": "^0.45.1",
         "lucide-react": "^0.474.0",
         "next": "^15.1.6",
+        "next-auth": "^5.0.0-beta.30",
         "qrcode": "^1.5.4",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
@@ -24,6 +27,7 @@
         "utf-8-validate": "^6.0.6"
     },
     "devDependencies": {
+        "drizzle-kit": "^0.31.9",
         "eslint": "^9",
         "eslint-config-next": "15.1.6"
     }

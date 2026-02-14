@@ -1,35 +1,18 @@
-import { connectWhatsApp } from '../../../lib/whatsapp';
+import { connectWhatsApp } from '@/lib/whatsapp';
+import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
 
-const validateApiKey = (req) => {
-    const apiKey = req.headers.get('x-api-key');
-    const serverKey = process.env.API_KEY;
-
-    if (!serverKey) {
-        console.error('[API Auth] CRITICAL: API_KEY is not set on the server!');
-        return false;
-    }
-
-    if (!apiKey) {
-        console.warn('[API Auth] Rejected: Request missing x-api-key header');
-        return false;
-    }
-
-    if (apiKey !== serverKey) {
-        console.warn('[API Auth] Rejected: API Key mismatch');
-        return false;
-    }
-
-    return true;
-};
-
 export async function POST(req) {
-    if (!validateApiKey(req)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await auth();
+    if (!session) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+    const apiKey = req.headers.get('x-api-key');
+    if (apiKey !== process.env.API_KEY) {
+        return NextResponse.json({ error: 'Invalid API Key' }, { status: 403 });
     }
 
     try {
-        await connectWhatsApp();
+        await connectWhatsApp(session.user.id);
         return NextResponse.json({ message: 'Connection initiated' });
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
