@@ -282,8 +282,8 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
                             ) : (
                                 groups
                                     .filter(g =>
-                                        !selectedGroups.includes(g.id) &&
-                                        g.name.toLowerCase().includes(searchQuery.toLowerCase())
+                                        !selectedGroups.includes(g?.id) &&
+                                        (g?.name || '').toLowerCase().includes((searchQuery || '').toLowerCase())
                                     )
                                     .slice(0, 5)
                                     .map(group => (
@@ -301,7 +301,7 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
                                         </div>
                                     ))
                             )}
-                            {!loadingGroups && groups.filter(g => !selectedGroups.includes(g.id) && g.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                            {!loadingGroups && groups.filter(g => !selectedGroups.includes(g?.id) && (g?.name || '').toLowerCase().includes((searchQuery || '').toLowerCase())).length === 0 && (
                                 <div className={styles.emptyList}>No matching groups</div>
                             )}
                         </div>
