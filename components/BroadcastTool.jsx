@@ -56,7 +56,13 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
             });
             if (!res.ok) throw new Error('Failed to fetch groups');
             const data = await res.json();
-            setGroups(data);
+            // Normalize data for stability
+            const safeData = (data || []).map(g => ({
+                ...g,
+                name: g?.name || 'Unnamed Group',
+                id: g?.id || `unknown-${Math.random()}`
+            }));
+            setGroups(safeData);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -116,10 +122,6 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
             setSending(false);
         }
     };
-
-    const filteredGroups = groups
-        .filter(g => g.name.toLowerCase().includes(searchQuery.toLowerCase()))
-        .slice(0, 5);
 
     return (
         <div className={styles.card}>
@@ -254,7 +256,7 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
                                     .filter(g => selectedGroups.includes(g.id))
                                     .map(group => (
                                         <div key={group.id} className={styles.chip}>
-                                            <span>{group.name}</span>
+                                            <span>{group.name || 'Unnamed Group'}</span>
                                             <button
                                                 onClick={() => toggleGroup(group.id)}
                                                 className={styles.removeChip}
@@ -293,7 +295,7 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
                                             onClick={() => toggleGroup(group.id)}
                                         >
                                             <div className={styles.groupInfo}>
-                                                <span className={styles.groupName}>{group.name}</span>
+                                                <span className={styles.groupName}>{group.name || 'Unnamed Group'}</span>
                                             </div>
                                             <div className={styles.addItem}>
                                                 <CheckCircle2 size={16} className={styles.addIcon} />
