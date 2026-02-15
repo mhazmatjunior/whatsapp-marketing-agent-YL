@@ -75,14 +75,26 @@ h4 {
 .app-container {
     width: 100vw;
     height: 100dvh;
-    padding: 20px;
+    padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
     box-sizing: border-box;
     position: relative;
     overflow: hidden;
-    /* Strict window lock */
+    /* Desktop lock */
+}
+
+@media (max-width: 768px) {
+    .app-container {
+        height: auto;
+        min-height: 100dvh;
+        padding: 12px;
+        gap: 12px;
+        overflow-y: auto;
+        /* Mobile flow */
+        overflow-x: hidden;
+    }
 }
 
 .app-header {
@@ -101,7 +113,6 @@ h4 {
 
 .app-footer {
     padding: 8px 20px;
-    /* Very slim footer */
     border: 1px solid var(--border-premium);
     border-radius: var(--radius-md);
     text-align: center;
@@ -109,6 +120,20 @@ h4 {
     -webkit-backdrop-filter: blur(5px);
             backdrop-filter: blur(5px);
     margin-top: auto;
+}
+
+@media (max-width: 768px) {
+    .app-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .app-footer {
+        padding: 12px;
+    }
 }
 
 /* Glassmorphism Utilities */

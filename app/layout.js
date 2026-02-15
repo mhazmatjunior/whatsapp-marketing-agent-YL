@@ -1,5 +1,5 @@
 import './globals.css';
-import AuthProvider from '../components/AuthProvider';
+import AuthProvider from '../components/AuthProvider.js';
 
 export const metadata = {
     title: 'Elite Broadcaster',

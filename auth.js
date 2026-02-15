@@ -13,6 +13,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         verificationTokensTable: verificationTokens,
     }),
     session: { strategy: "jwt" },
+    trustHost: true,
     providers: [
         Credentials({
             name: "Elite SaaS Login",

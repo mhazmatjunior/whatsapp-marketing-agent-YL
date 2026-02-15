@@ -12,14 +12,22 @@
     flex: 1;
     width: 100%;
     max-width: 100%;
-    /* Full screen width minus padding */
     margin: 0 auto;
     position: relative;
     overflow: hidden;
-    /* Grid handles its own scroll */
     min-height: 0;
-    /* Ensures it doesn't expand past main */
     animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (max-width: 768px) {
+    .card {
+        height: auto;
+        min-height: auto;
+        overflow: visible;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
 }
 
 /* Indigo Accent Glow */
@@ -49,7 +57,14 @@
     grid-template-columns: 1fr 320px;
     flex: 1;
     min-height: 0;
-    /* Critical for internal flex scrolling */
+}
+
+@media (max-width: 768px) {
+    .broadcastGrid {
+        grid-template-columns: 1fr;
+        height: auto;
+        min-height: auto;
+    }
 }
 
 .configArea {
@@ -62,6 +77,15 @@
     height: 100%;
     min-height: 0;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.01) 0%, transparent 100%);
+}
+
+@media (max-width: 768px) {
+    .configArea {
+        padding: 16px;
+        height: auto;
+        min-height: auto;
+        overflow: visible;
+    }
 }
 
 .configArea::-webkit-scrollbar {
@@ -84,19 +108,27 @@
 .selectionArea {
     padding: 20px;
     padding-right: 12px;
-    /* Leave room for scrollbar */
     background: rgba(2, 6, 23, 0.4);
     border-left: 1px solid var(--border-premium);
     display: flex;
     flex-direction: column;
     gap: 16px;
     overflow-y: scroll;
-    /* Force track for awareness */
     height: 100%;
     max-height: 100%;
-    /* Fill but don't exceed parent */
     min-height: 0;
-    /* Ensures the area is constrained so scrollbar appears */
+}
+
+@media (max-width: 768px) {
+    .selectionArea {
+        border-left: none;
+        border-top: 1px solid var(--border-premium);
+        height: auto;
+        max-height: none;
+        min-height: auto;
+        overflow: visible;
+        padding-right: 20px;
+    }
 }
 
 .selectionArea::-webkit-scrollbar-track {

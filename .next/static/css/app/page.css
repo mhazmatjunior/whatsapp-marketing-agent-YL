@@ -15,14 +15,22 @@
     flex: 1 1;
     width: 100%;
     max-width: 100%;
-    /* Full screen width minus padding */
     margin: 0 auto;
     position: relative;
     overflow: hidden;
-    /* Grid handles its own scroll */
     min-height: 0;
-    /* Ensures it doesn't expand past main */
     animation: BroadcastTool_slideUp__Bl_UH 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (max-width: 768px) {
+    .BroadcastTool_card__c_Kda {
+        height: auto;
+        min-height: auto;
+        overflow: visible;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
 }
 
 /* Indigo Accent Glow */
@@ -52,7 +60,14 @@
     grid-template-columns: 1fr 320px;
     flex: 1 1;
     min-height: 0;
-    /* Critical for internal flex scrolling */
+}
+
+@media (max-width: 768px) {
+    .BroadcastTool_broadcastGrid__dx_rd {
+        grid-template-columns: 1fr;
+        height: auto;
+        min-height: auto;
+    }
 }
 
 .BroadcastTool_configArea__K9f5J {
@@ -65,6 +80,15 @@
     height: 100%;
     min-height: 0;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.01) 0%, transparent 100%);
+}
+
+@media (max-width: 768px) {
+    .BroadcastTool_configArea__K9f5J {
+        padding: 16px;
+        height: auto;
+        min-height: auto;
+        overflow: visible;
+    }
 }
 
 .BroadcastTool_configArea__K9f5J::-webkit-scrollbar {
@@ -87,19 +111,27 @@
 .BroadcastTool_selectionArea__fGLi1 {
     padding: 20px;
     padding-right: 12px;
-    /* Leave room for scrollbar */
     background: rgba(2, 6, 23, 0.4);
     border-left: 1px solid var(--border-premium);
     display: flex;
     flex-direction: column;
     gap: 16px;
     overflow-y: scroll;
-    /* Force track for awareness */
     height: 100%;
     max-height: 100%;
-    /* Fill but don't exceed parent */
     min-height: 0;
-    /* Ensures the area is constrained so scrollbar appears */
+}
+
+@media (max-width: 768px) {
+    .BroadcastTool_selectionArea__fGLi1 {
+        border-left: none;
+        border-top: 1px solid var(--border-premium);
+        height: auto;
+        max-height: none;
+        min-height: auto;
+        overflow: visible;
+        padding-right: 20px;
+    }
 }
 
 .BroadcastTool_selectionArea__fGLi1::-webkit-scrollbar-track {
