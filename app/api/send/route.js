@@ -26,12 +26,23 @@ export async function POST(req) {
         const results = [];
         for (const jid of recipients) {
             try {
-                // Parse mentions for @everyone or @all tags in group broadcasts
+                // Expand @all / @everyone into real @phonenumber mentions for this group
+                let finalMessage = message;
                 let mentions = undefined;
+
                 if (jid.endsWith('@g.us') && message && (message.toLowerCase().includes('@everyone') || message.toLowerCase().includes('@all'))) {
                     try {
                         const metadata = await wa_session.sock.groupMetadata(jid);
-                        mentions = (metadata.participants || []).map(p => p.id);
+                        const participants = metadata.participants || [];
+
+                        // Build mentions array (JIDs) for push notification pings
+                        mentions = participants.map(p => p.id);
+
+                        // Build @phonenumber tag string (strip @s.whatsapp.net suffix)
+                        const tagString = participants.map(p => `@${p.id.split('@')[0]}`).join(' ');
+
+                        // Replace @all and @everyone (case-insensitive) with the tag string
+                        finalMessage = finalMessage.replace(/@all/gi, tagString).replace(/@everyone/gi, tagString);
                     } catch (mErr) {
                         console.warn(`[API Send] Failed to fetch group metadata for mentions:`, mErr);
                     }
@@ -45,25 +56,25 @@ export async function POST(req) {
                     const messageContent = {};
                     if (isImage) {
                         messageContent.image = buffer;
-                        messageContent.caption = message;
+                        messageContent.caption = finalMessage;
                     } else if (isVideo) {
                         messageContent.video = buffer;
-                        messageContent.caption = message;
+                        messageContent.caption = finalMessage;
                     } else {
                         // Handle as Document (PDF, ZIP, DOCX, etc.)
                         messageContent.document = buffer;
                         messageContent.fileName = file.name;
                         messageContent.mimetype = file.type;
-                        messageContent.caption = message;
+                        messageContent.caption = finalMessage;
                     }
-                    
+
                     if (mentions) {
                         messageContent.mentions = mentions;
                     }
 
                     await wa_session.sock.sendMessage(jid, messageContent);
                 } else {
-                    await wa_session.sock.sendMessage(jid, { text: message, mentions });
+                    await wa_session.sock.sendMessage(jid, { text: finalMessage, mentions });
                 }
                 results.push({ jid, status: 'sent' });
             } catch (error) {
