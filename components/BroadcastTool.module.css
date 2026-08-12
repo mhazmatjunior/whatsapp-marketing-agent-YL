@@ -633,3 +633,85 @@
     align-items: center;
     gap: 12px;
 }
+
+.joinsBtn {
+    background: linear-gradient(135deg, var(--primary-indigo) 0%, #4f46e5 100%);
+    border: none;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid var(--border-premium);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.joinsBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+}
+
+.announcementBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    margin-left: 8px;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    color: #F59E0B;
+    vertical-align: middle;
+}
+
+.groupBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    margin-left: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-dim);
+    vertical-align: middle;
+}
+
+.restrictedBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    margin-left: 8px;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    color: #818CF8;
+    vertical-align: middle;
+}
+
+.datetimeInput {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 500;
+    outline: none;
+    transition: all 0.2s ease;
+    width: 100%;
+    color-scheme: dark;
+}
+
+.datetimeInput:focus {
+    border-color: var(--primary-indigo);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.15);
+}

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession, signIn, signOut } from "next-auth/react";
 import BroadcastTool from '@/components/BroadcastTool';
 import Modal from '@/components/Modal';
+import SchedulesModal from '@/components/SchedulesModal';
 
 export default function Home() {
     const { data: session, status: authStatus } = useSession();
@@ -16,6 +17,11 @@ export default function Home() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loggingIn, setLoggingIn] = useState(false);
+
+    // Raised state & modal state
+    const [groups, setGroups] = useState([]);
+    const [loadingGroups, setLoadingGroups] = useState(false);
+    const [isSchedulesModalOpen, setIsSchedulesModalOpen] = useState(false);
 
     // Modal State
     const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'info', onConfirm: null });
@@ -40,6 +46,28 @@ export default function Home() {
         }
     };
 
+    const fetchGroups = async () => {
+        if (authStatus !== "authenticated" || statusData.status !== "connected") return;
+        setLoadingGroups(true);
+        try {
+            const res = await fetch('/api/groups', {
+                headers: { 'x-api-key': API_KEY }
+            });
+            if (!res.ok) throw new Error('Failed to fetch groups');
+            const data = await res.json();
+            const safeData = (data || []).map(g => ({
+                ...g,
+                name: g?.name || 'Unnamed Group',
+                id: g?.id || `unknown-${Math.random()}`
+            }));
+            setGroups(safeData);
+        } catch (err) {
+            console.error('[WhatsApp Home] Failed to fetch groups:', err);
+        } finally {
+            setLoadingGroups(false);
+        }
+    };
+
     useEffect(() => {
         if (authStatus === "authenticated") {
             fetchStatus();
@@ -47,6 +75,14 @@ export default function Home() {
             return () => clearInterval(interval);
         }
     }, [authStatus]);
+
+    useEffect(() => {
+        if (statusData.status === 'connected' && groups.length === 0) {
+            fetchGroups();
+        } else if (statusData.status !== 'connected') {
+            setGroups([]);
+        }
+    }, [statusData.status]);
 
     const handleConnect = async () => {
         if (!API_KEY) {
@@ -266,6 +302,29 @@ export default function Home() {
                         <h1 className="gold-glow" style={{ fontSize: '1.4rem', color: 'var(--primary-indigo)', fontWeight: '700', letterSpacing: '-0.03em', margin: 0 }}>
                             ELITE <span style={{ color: 'var(--text-pure)', fontWeight: '300' }}>BROADCASTER</span>
                         </h1>
+                        {statusData.status === 'connected' && (
+                            <button
+                                onClick={() => setIsSchedulesModalOpen(true)}
+                                className="nav-btn"
+                                style={{
+                                    marginLeft: '16px',
+                                    background: 'rgba(99, 102, 241, 0.1)',
+                                    border: '1px solid rgba(99, 102, 241, 0.2)',
+                                    color: 'var(--primary-indigo)',
+                                    padding: '6px 12px',
+                                    borderRadius: '8px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    transition: 'all 0.2s ease'
+                                }}
+                            >
+                                📅 Schedules
+                            </button>
+                        )}
                     </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -286,6 +345,10 @@ export default function Home() {
                     qr={statusData.qr}
                     onConnect={handleConnect}
                     onLogout={handleLogout}
+                    groups={groups}
+                    setGroups={setGroups}
+                    loadingGroups={loadingGroups}
+                    fetchGroups={fetchGroups}
                 />
             </main>
             <footer className="app-footer">
@@ -309,6 +372,11 @@ export default function Home() {
                 title={modal.title}
                 message={modal.message}
                 type={modal.type}
+            />
+            <SchedulesModal
+                isOpen={isSchedulesModalOpen}
+                onClose={() => setIsSchedulesModalOpen(false)}
+                groups={groups}
             />
         </div>
     );

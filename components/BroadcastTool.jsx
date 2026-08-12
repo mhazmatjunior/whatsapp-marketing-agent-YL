@@ -14,61 +14,38 @@ import {
     CheckCircle2,
     FileText,
     Video,
-    File
+    File,
+    Calendar
 } from 'lucide-react';
 import styles from './BroadcastTool.module.css';
 
 import Modal from './Modal';
+import JoinsModal from './JoinsModal';
 
-const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
-    const [groups, setGroups] = useState([]);
+const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loadingGroups, fetchGroups }) => {
     const [selectedGroups, setSelectedGroups] = useState([]);
     const [message, setMessage] = useState('');
     const [file, setFile] = useState(null);
     const [preview, setPreview] = useState(null);
     const [sending, setSending] = useState(false);
-    const [loadingGroups, setLoadingGroups] = useState(false);
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [scheduledTime, setScheduledTime] = useState('');
 
     // Modal State
     const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'info' });
+    const [isJoinsModalOpen, setIsJoinsModalOpen] = useState(false);
 
     const showModal = (title, message, type = 'info') => {
         setModal({ isOpen: true, title, message, type });
     };
 
-    // Fetch groups when connected
+    // Reset selection on logout/disconnect
     useEffect(() => {
-        if (status === 'connected') {
-            fetchGroups();
-        } else {
-            setGroups([]);
+        if (status !== 'connected') {
             setSelectedGroups([]);
         }
     }, [status]);
-
-    const fetchGroups = async () => {
-        setLoadingGroups(true);
-        try {
-            const res = await fetch('/api/groups', {
-                headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY }
-            });
-            if (!res.ok) throw new Error('Failed to fetch groups');
-            const data = await res.json();
-            // Normalize data for stability
-            const safeData = (data || []).map(g => ({
-                ...g,
-                name: g?.name || 'Unnamed Group',
-                id: g?.id || `unknown-${Math.random()}`
-            }));
-            setGroups(safeData);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoadingGroups(false);
-        }
-    };
 
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
@@ -98,15 +75,30 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
         formData.append('recipients', JSON.stringify(selectedGroups));
         if (file) formData.append('file', file);
 
+        // If scheduledTime is populated, route to schedule endpoint
+        const isScheduled = !!scheduledTime;
+        const endpoint = isScheduled ? '/api/schedules' : '/api/send';
+        if (isScheduled) {
+            formData.append('scheduledFor', scheduledTime);
+        }
+
         try {
-            const res = await fetch('/api/send', {
+            const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY },
                 body: formData
             });
-            if (!res.ok) throw new Error('Failed to send broadcast');
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || 'Failed to deploy broadcast');
+            }
+            
             const data = await res.json();
-            showModal('Broadcast Complete', 'Your campaign has been successfully deployed to all selected groups!', 'success');
+            if (isScheduled) {
+                showModal('Broadcast Scheduled', 'Your marketing campaign has been successfully scheduled and queued!', 'success');
+            } else {
+                showModal('Broadcast Complete', 'Your campaign has been successfully deployed to all selected groups!', 'success');
+            }
 
             // Clear state for clean slate
             setMessage('');
@@ -114,10 +106,11 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
             setPreview(null);
             setSearchQuery('');
             setSelectedGroups([]);
+            setScheduledTime('');
 
             console.log(data.results);
         } catch (err) {
-            setError('Failed to send broadcast');
+            setError(err.message || 'Failed to deploy broadcast');
         } finally {
             setSending(false);
         }
@@ -224,7 +217,7 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
                             />
                         </div>
 
-                        <div style={{ display: 'flex', gap: '12px' }}>
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
                             <button
                                 onClick={handleSend}
                                 disabled={sending || selectedGroups.length === 0}
@@ -232,11 +225,26 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
                                 style={{ flex: 2 }}
                             >
                                 {sending ? (
-                                    <><Loader2 className={styles.spinner} /> Sending...</>
+                                    <><Loader2 className={styles.spinner} /> Processing...</>
+                                ) : scheduledTime ? (
+                                    <><Calendar size={18} /> Schedule Broadcast ({selectedGroups.length})</>
                                 ) : (
                                     <><Send size={18} /> Send Broadcast ({selectedGroups.length})</>
                                 )}
                             </button>
+                            
+                            {/* Inline DateTime Picker */}
+                            <div className={styles.scheduleWrapper} style={{ flex: 2, display: 'flex', flexDirection: 'column' }}>
+                                <input
+                                    type="datetime-local"
+                                    value={scheduledTime}
+                                    onChange={(e) => setScheduledTime(e.target.value)}
+                                    className={styles.datetimeInput}
+                                    title="Set a time to schedule this broadcast"
+                                    min={new Date(new Date().getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0, 16)}
+                                />
+                            </div>
+
                             <button onClick={onLogout} className={styles.logoutBtn} style={{ flex: 1 }}>
                                 <LogOut size={16} /> Logout
                             </button>
@@ -246,7 +254,16 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
                     <div className={styles.selectionArea}>
                         <div className={styles.selectionHeader}>
                             <label><Users size={16} /> Recipients</label>
-                            <span className={styles.count}>{selectedGroups.length}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <button
+                                    onClick={() => setIsJoinsModalOpen(true)}
+                                    className={styles.joinsBtn}
+                                    type="button"
+                                >
+                                    Joins
+                                </button>
+                                <span className={styles.count}>{selectedGroups.length}</span>
+                            </div>
                         </div>
 
                         {/* Selected Groups Chips */}
@@ -295,7 +312,22 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
                                             onClick={() => toggleGroup(group.id)}
                                         >
                                             <div className={styles.groupInfo}>
-                                                <span className={styles.groupName}>{group.name || 'Unnamed Group'}</span>
+                                                <span className={styles.groupName}>
+                                                    {group.name || 'Unnamed Group'}
+                                                    {group.isCommunityAnnounce ? (
+                                                        <span className={styles.announcementBadge} title={group.canPost ? "Community Announcements (Admin)" : "Community Announcements (Read Only)"}>
+                                                            {group.canPost ? "📢 Announcement (Admin)" : "📢 Announcement (Read Only)"}
+                                                        </span>
+                                                    ) : group.isAnnounce ? (
+                                                        <span className={styles.restrictedBadge} title={group.canPost ? "Admin-Only Group (Admin)" : "Admin-Only Group (Read Only)"}>
+                                                            {group.canPost ? "🔒 Admin-Only" : "🔒 Read-Only"}
+                                                        </span>
+                                                    ) : (
+                                                        <span className={styles.groupBadge} title="Standard Group (All participants can post)">
+                                                            👥 Group
+                                                        </span>
+                                                    )}
+                                                </span>
                                             </div>
                                             <div className={styles.addItem}>
                                                 <CheckCircle2 size={16} className={styles.addIcon} />
@@ -316,6 +348,12 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout }) => {
                 title={modal.title}
                 message={modal.message}
                 type={modal.type}
+            />
+            <JoinsModal
+                isOpen={isJoinsModalOpen}
+                onClose={() => setIsJoinsModalOpen(false)}
+                groups={groups}
+                onSelectJoin={(recipients) => setSelectedGroups(recipients)}
             />
         </div>
     );

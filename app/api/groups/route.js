@@ -18,11 +18,31 @@ export async function GET(req) {
 
     try {
         const groups = await wa_session.sock.groupFetchAllParticipating();
-        const result = Object.values(groups).map(g => ({
-            id: g.id,
-            name: g.subject,
-            participants: g.participants.length
-        }));
+        const result = Object.values(groups).map(g => {
+            const isAnnounce = !!g.announce;
+            const isCommunityAnnounce = !!g.isCommunityAnnounce;
+            const participants = g.participants || [];
+            const myJid = wa_session.sock.user?.id || '';
+            const myPhoneNum = myJid.split(':')[0].split('@')[0];
+            const myLid = wa_session.sock.user?.lid || '';
+            const myLidNum = myLid.split(':')[0].split('@')[0];
+            
+            const myParticipant = participants.find(p => {
+                const pNum = p.id.split('@')[0];
+                return pNum === myPhoneNum || (myLidNum && pNum === myLidNum);
+            });
+            const isAdmin = !!(myParticipant && (myParticipant.admin === 'admin' || myParticipant.admin === 'superadmin'));
+            const canPost = !isAnnounce || isAdmin;
+
+            return {
+                id: g.id,
+                name: g.subject,
+                participants: participants.length,
+                isAnnounce,
+                isCommunityAnnounce,
+                canPost
+            };
+        });
         return NextResponse.json(result);
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
