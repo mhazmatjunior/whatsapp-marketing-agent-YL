@@ -17,9 +17,9 @@
 }
 
 .modal {
-    width: 90%;
+    width: 92%;
     max-width: 450px;
-    padding: 32px;
+    padding: 28px;
     border-radius: var(--radius-lg);
     position: relative;
     background: var(--glass-bg);
@@ -29,9 +29,15 @@
     box-shadow:
         0 40px 80px -20px rgba(0, 0, 0, 0.8),
         0 0 40px rgba(129, 140, 248, 0.05);
-    /* Soft Indigo Glow */
     border: 1px solid rgba(255, 255, 255, 0.08);
-    /* More defined border */
+}
+
+@media (max-width: 480px) {
+    .modal {
+        width: 96%;
+        padding: 22px 18px;
+        border-radius: var(--radius-md);
+    }
 }
 
 .closeBtn {
@@ -101,7 +107,19 @@
 .actions {
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+    .actions {
+        flex-direction: column-reverse;
+    }
+    .confirmBtn,
+    .cancelBtn {
+        width: 100%;
+        text-align: center;
+    }
 }
 
 .confirmBtn {

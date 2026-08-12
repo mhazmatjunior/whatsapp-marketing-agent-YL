@@ -26,6 +26,17 @@ export async function POST(req) {
         const results = [];
         for (const jid of recipients) {
             try {
+                // Parse mentions for @everyone or @all tags in group broadcasts
+                let mentions = undefined;
+                if (jid.endsWith('@g.us') && message && (message.toLowerCase().includes('@everyone') || message.toLowerCase().includes('@all'))) {
+                    try {
+                        const metadata = await wa_session.sock.groupMetadata(jid);
+                        mentions = (metadata.participants || []).map(p => p.id);
+                    } catch (mErr) {
+                        console.warn(`[API Send] Failed to fetch group metadata for mentions:`, mErr);
+                    }
+                }
+
                 if (file && file instanceof File) {
                     const buffer = Buffer.from(await file.arrayBuffer());
                     const isImage = file.type.startsWith('image/');
@@ -45,10 +56,14 @@ export async function POST(req) {
                         messageContent.mimetype = file.type;
                         messageContent.caption = message;
                     }
+                    
+                    if (mentions) {
+                        messageContent.mentions = mentions;
+                    }
 
                     await wa_session.sock.sendMessage(jid, messageContent);
                 } else {
-                    await wa_session.sock.sendMessage(jid, { text: message });
+                    await wa_session.sock.sendMessage(jid, { text: message, mentions });
                 }
                 results.push({ jid, status: 'sent' });
             } catch (error) {

@@ -14,6 +14,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
     session: { strategy: "jwt" },
     trustHost: true,
+    useSecureCookies: process.env.NODE_ENV === "production",
     providers: [
         Credentials({
             name: "Elite SaaS Login",

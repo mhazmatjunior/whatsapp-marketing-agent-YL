@@ -217,7 +217,7 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
                             />
                         </div>
 
-                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
+                        <div className={styles.actionRow}>
                             <button
                                 onClick={handleSend}
                                 disabled={sending || selectedGroups.length === 0}

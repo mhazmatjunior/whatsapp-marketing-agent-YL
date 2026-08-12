@@ -155,6 +155,7 @@ export default function SchedulesModal({ isOpen, onClose, groups }) {
                                     <p>No messages are currently scheduled.</p>
                                 </div>
                             ) : (
+                                <>
                                 <div className={styles.tableContainer}>
                                     <table className={styles.table}>
                                         <thead>
@@ -226,6 +227,48 @@ export default function SchedulesModal({ isOpen, onClose, groups }) {
                                         </tbody>
                                     </table>
                                 </div>
+
+                                {/* Mobile card list */}
+                                <div className={styles.mobileCardList}>
+                                    {schedules.map(item => (
+                                        <div key={item.id} className={styles.scheduleCard}>
+                                            <div className={styles.scheduleCardRow}>
+                                                <span className={styles.scheduleCardLabel}>Scheduled For</span>
+                                                <span className={styles.scheduleCardValue}>{new Date(item.scheduledFor).toLocaleString()}</span>
+                                            </div>
+                                            <div className={styles.scheduleCardRow}>
+                                                <span className={styles.scheduleCardLabel}>Message</span>
+                                                <span className={styles.scheduleCardValue} style={{ maxWidth: '60%' }}>{item.message || '(No Text Caption)'}</span>
+                                            </div>
+                                            <div className={styles.scheduleCardRow}>
+                                                <span className={styles.scheduleCardLabel}>Recipients</span>
+                                                <span className={styles.scheduleCardValue}>{item.recipients.length} groups</span>
+                                            </div>
+                                            {item.hasAttachment && (
+                                                <div className={styles.scheduleCardRow}>
+                                                    <span className={styles.scheduleCardLabel}>Attachment</span>
+                                                    <span className={styles.scheduleCardValue} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        <FileText size={12} /> {item.fileName || 'file'}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            <div className={styles.scheduleCardRow}>
+                                                <span className={`${styles.badge} ${styles[item.status]}`}>{item.status.toUpperCase()}</span>
+                                                <div className={styles.actions}>
+                                                    {(item.status === 'pending' || item.status === 'failed') && (
+                                                        <button onClick={() => startEdit(item)} className={`${styles.actionBtn} ${styles.editBtn}`} title="Edit">
+                                                            <Edit2 size={15} />
+                                                        </button>
+                                                    )}
+                                                    <button onClick={() => handleDelete(item.id)} className={`${styles.actionBtn} ${styles.deleteBtn}`} disabled={item.status === 'processing'}>
+                                                        <Trash2 size={15} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                </>
                             )}
                         </>
                     )}

@@ -31,12 +31,30 @@
     animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+@media (max-width: 768px) {
+    .modal {
+        border-radius: 16px;
+        max-height: 92dvh;
+    }
+}
+
 .header {
-    padding: 24px;
+    padding: 20px 24px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+@media (max-width: 540px) {
+    .header {
+        padding: 14px 16px;
+    }
+    .header h3 {
+        font-size: 1.1rem !important;
+    }
 }
 
 .header h3 {
@@ -67,12 +85,18 @@
 }
 
 .content {
-    padding: 24px;
+    padding: 20px 24px;
     overflow-y: auto;
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 16px;
+}
+
+@media (max-width: 540px) {
+    .content {
+        padding: 14px 12px;
+    }
 }
 
 .content::-webkit-scrollbar {
@@ -103,6 +127,12 @@
     background: rgba(0, 0, 0, 0.15);
 }
 
+@media (max-width: 640px) {
+    .tableContainer {
+        display: none;
+    }
+}
+
 .table {
     width: 100%;
     border-collapse: collapse;
@@ -130,6 +160,51 @@
 
 .table tr:hover td {
     background: rgba(255, 255, 255, 0.01);
+}
+
+/* Mobile card list — shown only on small screens */
+.mobileCardList {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+}
+
+@media (max-width: 640px) {
+    .mobileCardList {
+        display: flex;
+    }
+}
+
+.scheduleCard {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.scheduleCardRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.scheduleCardLabel {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.scheduleCardValue {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-align: right;
+    word-break: break-word;
 }
 
 .messageExcerpt {
@@ -268,11 +343,24 @@
 }
 
 .footer {
-    padding: 16px 24px;
+    padding: 14px 20px;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 540px) {
+    .footer {
+        padding: 12px;
+        justify-content: stretch;
+    }
+    .footer .primaryBtn,
+    .footer .secondaryBtn {
+        flex: 1;
+        text-align: center;
+    }
 }
 
 .primaryBtn {

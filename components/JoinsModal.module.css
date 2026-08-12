@@ -31,12 +31,28 @@
     animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+@media (max-width: 768px) {
+    .modal {
+        border-radius: 16px;
+        max-height: 92dvh;
+    }
+}
+
 .header {
-    padding: 20px 24px;
+    padding: 16px 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+@media (max-width: 540px) {
+    .header {
+        padding: 12px 14px;
+    }
+    .header h3 {
+        font-size: 1.05rem !important;
+    }
 }
 
 .header h3 {
@@ -96,12 +112,18 @@
 }
 
 .content {
-    padding: 24px;
+    padding: 20px 24px;
     overflow-y: auto;
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 16px;
+}
+
+@media (max-width: 540px) {
+    .content {
+        padding: 14px 12px;
+    }
 }
 
 .content::-webkit-scrollbar {
@@ -308,11 +330,24 @@
 }
 
 .footer {
-    padding: 16px 24px;
+    padding: 14px 20px;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
     display: flex;
-    gap: 12px;
+    gap: 10px;
     justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 540px) {
+    .footer {
+        padding: 12px;
+        justify-content: stretch;
+    }
+    .footer .primaryBtn,
+    .footer .secondaryBtn {
+        flex: 1;
+        text-align: center;
+    }
 }
 
 .primaryBtn {
