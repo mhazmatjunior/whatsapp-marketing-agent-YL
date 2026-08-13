@@ -118,8 +118,18 @@ export default function SchedulesModal({ isOpen, onClose, groups }) {
         }
     };
 
+    const getRecipientNames = (recipients) => {
+        if (!recipients || !Array.isArray(recipients)) return '';
+        const names = recipients.map(jid => {
+            const g = (groups || []).find(x => x.id === jid);
+            return g ? g.name : `Group (${jid.split('@')[0]})`;
+        });
+        return names.join(', ');
+    };
+
     if (!isOpen) return null;
 
+    // Filtered groups for edit view
     const filteredGroups = (groups || []).filter(g =>
         (g?.name || 'Unnamed Group').toLowerCase().includes((searchQuery || '').toLowerCase())
     );
@@ -180,12 +190,14 @@ export default function SchedulesModal({ isOpen, onClose, groups }) {
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        {item.recipients.length} groups
+                                                        <span className={styles.recipientExcerpt} title={getRecipientNames(item.recipients)}>
+                                                            {getRecipientNames(item.recipients)}
+                                                        </span>
                                                     </td>
                                                     <td>
                                                         {item.hasAttachment ? (
                                                             <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
-                                                                <FileText size={14} /> {item.fileName || 'file'}
+                                                                 <FileText size={14} /> {item.fileName || 'file'}
                                                             </span>
                                                         ) : (
                                                             <span style={{ opacity: 0.4 }}>—</span>
@@ -242,7 +254,7 @@ export default function SchedulesModal({ isOpen, onClose, groups }) {
                                             </div>
                                             <div className={styles.scheduleCardRow}>
                                                 <span className={styles.scheduleCardLabel}>Recipients</span>
-                                                <span className={styles.scheduleCardValue}>{item.recipients.length} groups</span>
+                                                <span className={styles.scheduleCardValue} style={{ maxWidth: '60%' }}>{getRecipientNames(item.recipients)}</span>
                                             </div>
                                             {item.hasAttachment && (
                                                 <div className={styles.scheduleCardRow}>
@@ -319,7 +331,7 @@ export default function SchedulesModal({ isOpen, onClose, groups }) {
                                     <Search size={14} style={{ color: 'var(--text-dim)' }} />
                                     <input
                                         type="text"
-                                        placeholder="Filter recipients..."
+                                        placeholder="Filter groups..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         style={{ background: 'none', border: 'none', color: 'white', fontSize: '0.8rem', outline: 'none', width: '100%' }}
@@ -344,7 +356,7 @@ export default function SchedulesModal({ isOpen, onClose, groups }) {
                                                 <input
                                                     type="checkbox"
                                                     checked={isSelected}
-                                                    onChange={() => {}} // Handled by parent div click
+                                                    onChange={() => {}} // Handled by parent click
                                                     className={styles.checkbox}
                                                 />
                                                 <span style={{ fontSize: '0.8rem', color: isSelected ? 'white' : 'var(--text-dim)' }}>

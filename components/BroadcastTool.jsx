@@ -5,7 +5,6 @@ import {
     QrCode,
     Send,
     Users,
-    User,
     Image as ImageIcon,
     LogOut,
     Loader2,
@@ -13,11 +12,10 @@ import {
     AlertCircle,
     X,
     CheckCircle2,
-    FileText,
     Video,
     File,
+    FileText,
     Calendar,
-    Phone,
 } from 'lucide-react';
 import styles from './BroadcastTool.module.css';
 
@@ -34,11 +32,6 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
     const [searchQuery, setSearchQuery] = useState('');
     const [scheduledTime, setScheduledTime] = useState('');
 
-    // Contacts state
-    const [contacts, setContacts] = useState([]);
-    const [loadingContacts, setLoadingContacts] = useState(false);
-    const [recipientTab, setRecipientTab] = useState('groups'); // 'groups' | 'contacts' | 'all'
-
     // Modal State
     const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'info' });
     const [isJoinsModalOpen, setIsJoinsModalOpen] = useState(false);
@@ -51,49 +44,8 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
     useEffect(() => {
         if (status !== 'connected') {
             setSelectedGroups([]);
-            setContacts([]);
         }
     }, [status]);
-
-    // Fetch contacts when connected
-    useEffect(() => {
-        if (status === 'connected') {
-            fetchContacts();
-        }
-    }, [status]);
-
-    const fetchContacts = async () => {
-        setLoadingContacts(true);
-        try {
-            const res = await fetch('/api/contacts', {
-                headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setContacts(data);
-            }
-        } catch (e) {
-            console.warn('Failed to fetch contacts:', e);
-        } finally {
-            setLoadingContacts(false);
-        }
-    };
-
-    // Combined recipients list for "all" tab
-    const allRecipients = [
-        ...groups.map(g => ({ ...g, type: 'group' })),
-        ...contacts.map(c => ({ ...c, type: 'contact' })),
-    ];
-
-    // Which list is currently visible based on tab
-    const visibleList =
-        recipientTab === 'groups' ? groups.map(g => ({ ...g, type: 'group' })) :
-        recipientTab === 'contacts' ? contacts.map(c => ({ ...c, type: 'contact' })) :
-        allRecipients;
-
-    // Find a recipient by id across both groups and contacts
-    const findRecipient = (id) =>
-        allRecipients.find(r => r.id === id);
 
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
@@ -112,7 +64,7 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
     };
 
     const handleSend = async () => {
-        if (selectedGroups.length === 0) return showModal('Recipient Required', 'Please select at least one group or contact.');
+        if (selectedGroups.length === 0) return showModal('Recipient Required', 'Please select at least one group.');
         if (!message && !file) return showModal('Content Required', 'Please provide a message or a file to broadcast.');
 
         setSending(true);
@@ -144,7 +96,7 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
             if (isScheduled) {
                 showModal('Broadcast Scheduled', 'Your marketing campaign has been successfully scheduled and queued!', 'success');
             } else {
-                showModal('Broadcast Complete', 'Your campaign has been successfully deployed to all selected recipients!', 'success');
+                showModal('Broadcast Complete', 'Your campaign has been successfully deployed to all selected groups!', 'success');
             }
 
             setMessage('');
@@ -162,23 +114,10 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
         }
     };
 
-    const tabStyle = (active) => ({
-        padding: '6px 14px',
-        borderRadius: '8px',
-        border: 'none',
-        fontSize: '0.78rem',
-        fontWeight: '600',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-        background: active ? 'rgba(99,102,241,0.2)' : 'transparent',
-        color: active ? 'var(--primary-indigo)' : 'var(--text-dim)',
-        minHeight: '32px',
-    });
-
-    const filteredVisible = visibleList
-        .filter(r =>
-            !selectedGroups.includes(r.id) &&
-            (r.name || r.phone || '').toLowerCase().includes((searchQuery || '').toLowerCase())
+    const filteredVisible = (groups || [])
+        .filter(g =>
+            !selectedGroups.includes(g.id) &&
+            (g.name || '').toLowerCase().includes((searchQuery || '').toLowerCase())
         )
         .slice(0, 8);
 
@@ -232,10 +171,6 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
                             <div className={styles.metricCard}>
                                 <span className={styles.metricTitle}>Groups</span>
                                 <span className={styles.metricValue}>{groups.length}</span>
-                            </div>
-                            <div className={styles.metricCard}>
-                                <span className={styles.metricTitle}>Contacts</span>
-                                <span className={styles.metricValue}>{contacts.length}</span>
                             </div>
                         </div>
 
@@ -334,28 +269,14 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
                             </div>
                         </div>
 
-                        {/* Tab switcher: Groups | Contacts | All */}
-                        <div style={{ display: 'flex', gap: '4px', padding: '0 0 10px 0', borderBottom: '1px solid var(--border-premium)', marginBottom: '10px' }}>
-                            <button style={tabStyle(recipientTab === 'groups')} onClick={() => setRecipientTab('groups')}>
-                                👥 Groups
-                            </button>
-                            <button style={tabStyle(recipientTab === 'contacts')} onClick={() => setRecipientTab('contacts')}>
-                                👤 Contacts
-                            </button>
-                            <button style={tabStyle(recipientTab === 'all')} onClick={() => setRecipientTab('all')}>
-                                🌐 All
-                            </button>
-                        </div>
-
-                        {/* Selected chips — show name for both groups and contacts */}
+                        {/* Selected chips */}
                         {selectedGroups.length > 0 && (
                             <div className={styles.selectedList}>
                                 {selectedGroups.map(id => {
-                                    const r = findRecipient(id);
+                                    const g = (groups || []).find(x => x.id === id);
                                     return (
                                         <div key={id} className={styles.chip}>
-                                            {r?.type === 'contact' ? <User size={10} style={{ opacity: 0.6 }} /> : null}
-                                            <span>{r?.name || r?.phone || id}</span>
+                                            <span>{g?.name || id}</span>
                                             <button
                                                 onClick={() => toggleRecipient(id)}
                                                 className={styles.removeChip}
@@ -372,14 +293,14 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
                             <Search size={16} />
                             <input
                                 type="text"
-                                placeholder={recipientTab === 'contacts' ? 'Search contacts...' : recipientTab === 'all' ? 'Search all...' : 'Search groups...'}
+                                placeholder="Search groups..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
 
                         <div className={styles.groupList}>
-                            {(loadingGroups && recipientTab !== 'contacts') || (loadingContacts && recipientTab !== 'groups') ? (
+                            {loadingGroups ? (
                                 <div className={styles.loadingList}>Loading...</div>
                             ) : (
                                 filteredVisible.map(item => (
@@ -390,12 +311,8 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
                                     >
                                         <div className={styles.groupInfo}>
                                             <span className={styles.groupName}>
-                                                {item.name || item.phone || item.id}
-                                                {item.type === 'contact' ? (
-                                                    <span className={styles.groupBadge} title="Individual Contact">
-                                                        <Phone size={10} style={{ display: 'inline', marginRight: '3px' }} />Contact
-                                                    </span>
-                                                ) : item.isCommunityAnnounce ? (
+                                                {item.name || item.id}
+                                                {item.isCommunityAnnounce ? (
                                                     <span className={styles.announcementBadge} title={item.canPost ? "Community Announcements (Admin)" : "Community Announcements (Read Only)"}>
                                                         {item.canPost ? "📢 Announcement (Admin)" : "📢 Announcement (Read Only)"}
                                                     </span>
@@ -409,11 +326,6 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
                                                     </span>
                                                 )}
                                             </span>
-                                            {item.type === 'contact' && item.phone && (
-                                                <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', display: 'block', marginTop: '2px' }}>
-                                                    +{item.phone}
-                                                </span>
-                                            )}
                                         </div>
                                         <div className={styles.addItem}>
                                             <CheckCircle2 size={16} className={styles.addIcon} />
@@ -421,11 +333,9 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
                                     </div>
                                 ))
                             )}
-                            {!loadingGroups && !loadingContacts && filteredVisible.length === 0 && (
+                            {!loadingGroups && filteredVisible.length === 0 && (
                                 <div className={styles.emptyList}>
-                                    {recipientTab === 'contacts'
-                                        ? 'No contacts found. Contacts appear after WhatsApp syncs.'
-                                        : 'No matching recipients'}
+                                    No matching recipients
                                 </div>
                             )}
                         </div>

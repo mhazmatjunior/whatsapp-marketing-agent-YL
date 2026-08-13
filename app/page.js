@@ -37,6 +37,7 @@ export default function Home() {
         if (authStatus !== "authenticated") return;
         try {
             const res = await fetch('/api/status');
+            if (!res.ok) throw new Error(`Status HTTP error: ${res.status}`);
             const data = await res.json();
             if (data.error) throw new Error(data.error);
             if (data.status === 'connected') {
@@ -72,6 +73,8 @@ export default function Home() {
         }
     };
 
+
+
     useEffect(() => {
         if (authStatus === "authenticated") {
             fetchStatus();
@@ -81,8 +84,8 @@ export default function Home() {
     }, [authStatus]);
 
     useEffect(() => {
-        if (statusData.status === 'connected' && groups.length === 0) {
-            fetchGroups();
+        if (statusData.status === 'connected') {
+            if (groups.length === 0) fetchGroups();
         } else if (statusData.status !== 'connected' && statusData.status !== 'connecting') {
             // Only clear groups if we're not just briefly reconnecting
             const msSinceConnected = lastConnectedAt.current ? Date.now() - lastConnectedAt.current : Infinity;
