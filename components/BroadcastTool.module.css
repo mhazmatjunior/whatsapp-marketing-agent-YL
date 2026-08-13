@@ -145,7 +145,7 @@
 /* Metrics */
 .metricsGrid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
     margin-bottom: 8px;
 }
@@ -671,7 +671,7 @@
     }
 
     .metricsGrid {
-        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-columns: 1fr 1fr;
         gap: 6px;
     }
 
