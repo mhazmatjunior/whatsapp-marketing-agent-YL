@@ -17,8 +17,8 @@ export async function GET(req) {
     }
 
     try {
-        // Contacts are populated by makeInMemoryStore bound to the socket
-        const rawContacts = wa_session.store?.contacts || {};
+        // Contacts are populated by contacts.upsert/contacts.update event listeners
+        const rawContacts = wa_session.contacts || {};
 
         const contacts = Object.values(rawContacts)
             .filter(c => {
