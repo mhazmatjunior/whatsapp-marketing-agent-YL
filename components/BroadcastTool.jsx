@@ -78,7 +78,8 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
         const isScheduled = !!scheduledTime;
         const endpoint = isScheduled ? '/api/schedules' : '/api/send';
         if (isScheduled) {
-            formData.append('scheduledFor', scheduledTime);
+            const dateObj = new Date(scheduledTime);
+            formData.append('scheduledFor', dateObj.toISOString());
         }
 
         try {

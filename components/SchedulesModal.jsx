@@ -94,7 +94,7 @@ export default function SchedulesModal({ isOpen, onClose, groups }) {
             formData.append('id', editId);
             formData.append('message', editMessage);
             formData.append('recipients', JSON.stringify(editRecipients));
-            formData.append('scheduledFor', editTime);
+            formData.append('scheduledFor', scheduledTime.toISOString());
             if (clearFile) {
                 formData.append('clearFile', 'true');
             }
