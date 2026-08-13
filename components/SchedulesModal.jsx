@@ -20,6 +20,12 @@ export default function SchedulesModal({ isOpen, onClose, groups }) {
     const [hasFile, setHasFile] = useState(false);
     const [saving, setSaving] = useState(false);
 
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
     useEffect(() => {
         if (isOpen) {
             fetchSchedules();
@@ -182,7 +188,7 @@ export default function SchedulesModal({ isOpen, onClose, groups }) {
                                             {schedules.map(item => (
                                                 <tr key={item.id}>
                                                     <td style={{ whiteSpace: 'nowrap' }}>
-                                                        {new Date(item.scheduledFor).toLocaleString()}
+                                                        {isMounted ? new Date(item.scheduledFor).toLocaleString() : ''}
                                                     </td>
                                                     <td>
                                                         <span className={styles.messageExcerpt} title={item.message}>
@@ -246,7 +252,7 @@ export default function SchedulesModal({ isOpen, onClose, groups }) {
                                         <div key={item.id} className={styles.scheduleCard}>
                                             <div className={styles.scheduleCardRow}>
                                                 <span className={styles.scheduleCardLabel}>Scheduled For</span>
-                                                <span className={styles.scheduleCardValue}>{new Date(item.scheduledFor).toLocaleString()}</span>
+                                                <span className={styles.scheduleCardValue}>{isMounted ? new Date(item.scheduledFor).toLocaleString() : ''}</span>
                                             </div>
                                             <div className={styles.scheduleCardRow}>
                                                 <span className={styles.scheduleCardLabel}>Message</span>
