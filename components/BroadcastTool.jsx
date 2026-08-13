@@ -5,6 +5,7 @@ import {
     QrCode,
     Send,
     Users,
+    User,
     Image as ImageIcon,
     LogOut,
     Loader2,
@@ -15,7 +16,8 @@ import {
     FileText,
     Video,
     File,
-    Calendar
+    Calendar,
+    Phone,
 } from 'lucide-react';
 import styles from './BroadcastTool.module.css';
 
@@ -32,6 +34,11 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
     const [searchQuery, setSearchQuery] = useState('');
     const [scheduledTime, setScheduledTime] = useState('');
 
+    // Contacts state
+    const [contacts, setContacts] = useState([]);
+    const [loadingContacts, setLoadingContacts] = useState(false);
+    const [recipientTab, setRecipientTab] = useState('groups'); // 'groups' | 'contacts' | 'all'
+
     // Modal State
     const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'info' });
     const [isJoinsModalOpen, setIsJoinsModalOpen] = useState(false);
@@ -44,8 +51,49 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
     useEffect(() => {
         if (status !== 'connected') {
             setSelectedGroups([]);
+            setContacts([]);
         }
     }, [status]);
+
+    // Fetch contacts when connected
+    useEffect(() => {
+        if (status === 'connected') {
+            fetchContacts();
+        }
+    }, [status]);
+
+    const fetchContacts = async () => {
+        setLoadingContacts(true);
+        try {
+            const res = await fetch('/api/contacts', {
+                headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setContacts(data);
+            }
+        } catch (e) {
+            console.warn('Failed to fetch contacts:', e);
+        } finally {
+            setLoadingContacts(false);
+        }
+    };
+
+    // Combined recipients list for "all" tab
+    const allRecipients = [
+        ...groups.map(g => ({ ...g, type: 'group' })),
+        ...contacts.map(c => ({ ...c, type: 'contact' })),
+    ];
+
+    // Which list is currently visible based on tab
+    const visibleList =
+        recipientTab === 'groups' ? groups.map(g => ({ ...g, type: 'group' })) :
+        recipientTab === 'contacts' ? contacts.map(c => ({ ...c, type: 'contact' })) :
+        allRecipients;
+
+    // Find a recipient by id across both groups and contacts
+    const findRecipient = (id) =>
+        allRecipients.find(r => r.id === id);
 
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
@@ -57,15 +105,15 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
         }
     };
 
-    const toggleGroup = (id) => {
+    const toggleRecipient = (id) => {
         setSelectedGroups(prev =>
-            prev.includes(id) ? prev.filter(gid => gid !== id) : [...prev, id]
+            prev.includes(id) ? prev.filter(rid => rid !== id) : [...prev, id]
         );
     };
 
     const handleSend = async () => {
-        if (selectedGroups.length === 0) return showModal('Recipient Required', 'Please select at least one marketing group.');
-        if (!message && !file) return showModal('Content Required', 'Please provide a message or a poster to broadcast.');
+        if (selectedGroups.length === 0) return showModal('Recipient Required', 'Please select at least one group or contact.');
+        if (!message && !file) return showModal('Content Required', 'Please provide a message or a file to broadcast.');
 
         setSending(true);
         setError(null);
@@ -75,7 +123,6 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
         formData.append('recipients', JSON.stringify(selectedGroups));
         if (file) formData.append('file', file);
 
-        // If scheduledTime is populated, route to schedule endpoint
         const isScheduled = !!scheduledTime;
         const endpoint = isScheduled ? '/api/schedules' : '/api/send';
         if (isScheduled) {
@@ -92,15 +139,14 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
                 const errData = await res.json().catch(() => ({}));
                 throw new Error(errData.error || 'Failed to deploy broadcast');
             }
-            
+
             const data = await res.json();
             if (isScheduled) {
                 showModal('Broadcast Scheduled', 'Your marketing campaign has been successfully scheduled and queued!', 'success');
             } else {
-                showModal('Broadcast Complete', 'Your campaign has been successfully deployed to all selected groups!', 'success');
+                showModal('Broadcast Complete', 'Your campaign has been successfully deployed to all selected recipients!', 'success');
             }
 
-            // Clear state for clean slate
             setMessage('');
             setFile(null);
             setPreview(null);
@@ -116,6 +162,26 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
         }
     };
 
+    const tabStyle = (active) => ({
+        padding: '6px 14px',
+        borderRadius: '8px',
+        border: 'none',
+        fontSize: '0.78rem',
+        fontWeight: '600',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        background: active ? 'rgba(99,102,241,0.2)' : 'transparent',
+        color: active ? 'var(--primary-indigo)' : 'var(--text-dim)',
+        minHeight: '32px',
+    });
+
+    const filteredVisible = visibleList
+        .filter(r =>
+            !selectedGroups.includes(r.id) &&
+            (r.name || r.phone || '').toLowerCase().includes((searchQuery || '').toLowerCase())
+        )
+        .slice(0, 8);
+
     return (
         <div className={styles.card}>
             {error && (
@@ -124,8 +190,6 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
                     {error}
                 </div>
             )}
-
-
 
             {status === 'disconnected' && !qr && (
                 <div className={styles.emptyState}>
@@ -166,8 +230,12 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
                                 <span className={styles.metricValue}>{status === 'connected' ? '1' : '0'}</span>
                             </div>
                             <div className={styles.metricCard}>
-                                <span className={styles.metricTitle}>Total Groups</span>
+                                <span className={styles.metricTitle}>Groups</span>
                                 <span className={styles.metricValue}>{groups.length}</span>
+                            </div>
+                            <div className={styles.metricCard}>
+                                <span className={styles.metricTitle}>Contacts</span>
+                                <span className={styles.metricValue}>{contacts.length}</span>
                             </div>
                         </div>
 
@@ -227,12 +295,12 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
                                 {sending ? (
                                     <><Loader2 className={styles.spinner} /> Processing...</>
                                 ) : scheduledTime ? (
-                                    <><Calendar size={18} /> Schedule Broadcast ({selectedGroups.length})</>
+                                    <><Calendar size={18} /> Schedule ({selectedGroups.length})</>
                                 ) : (
-                                    <><Send size={18} /> Send Broadcast ({selectedGroups.length})</>
+                                    <><Send size={18} /> Send ({selectedGroups.length})</>
                                 )}
                             </button>
-                            
+
                             {/* Inline DateTime Picker */}
                             <div className={styles.scheduleWrapper} style={{ flex: 2, display: 'flex', flexDirection: 'column' }}>
                                 <input
@@ -266,22 +334,37 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
                             </div>
                         </div>
 
-                        {/* Selected Groups Chips */}
+                        {/* Tab switcher: Groups | Contacts | All */}
+                        <div style={{ display: 'flex', gap: '4px', padding: '0 0 10px 0', borderBottom: '1px solid var(--border-premium)', marginBottom: '10px' }}>
+                            <button style={tabStyle(recipientTab === 'groups')} onClick={() => setRecipientTab('groups')}>
+                                👥 Groups
+                            </button>
+                            <button style={tabStyle(recipientTab === 'contacts')} onClick={() => setRecipientTab('contacts')}>
+                                👤 Contacts
+                            </button>
+                            <button style={tabStyle(recipientTab === 'all')} onClick={() => setRecipientTab('all')}>
+                                🌐 All
+                            </button>
+                        </div>
+
+                        {/* Selected chips — show name for both groups and contacts */}
                         {selectedGroups.length > 0 && (
                             <div className={styles.selectedList}>
-                                {groups
-                                    .filter(g => selectedGroups.includes(g.id))
-                                    .map(group => (
-                                        <div key={group.id} className={styles.chip}>
-                                            <span>{group.name || 'Unnamed Group'}</span>
+                                {selectedGroups.map(id => {
+                                    const r = findRecipient(id);
+                                    return (
+                                        <div key={id} className={styles.chip}>
+                                            {r?.type === 'contact' ? <User size={10} style={{ opacity: 0.6 }} /> : null}
+                                            <span>{r?.name || r?.phone || id}</span>
                                             <button
-                                                onClick={() => toggleGroup(group.id)}
+                                                onClick={() => toggleRecipient(id)}
                                                 className={styles.removeChip}
                                             >
                                                 <X size={12} />
                                             </button>
                                         </div>
-                                    ))}
+                                    );
+                                })}
                             </div>
                         )}
 
@@ -289,54 +372,61 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
                             <Search size={16} />
                             <input
                                 type="text"
-                                placeholder="Search groups..."
+                                placeholder={recipientTab === 'contacts' ? 'Search contacts...' : recipientTab === 'all' ? 'Search all...' : 'Search groups...'}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
 
                         <div className={styles.groupList}>
-                            {loadingGroups ? (
-                                <div className={styles.loadingList}>Fetching groups...</div>
+                            {(loadingGroups && recipientTab !== 'contacts') || (loadingContacts && recipientTab !== 'groups') ? (
+                                <div className={styles.loadingList}>Loading...</div>
                             ) : (
-                                groups
-                                    .filter(g =>
-                                        !selectedGroups.includes(g?.id) &&
-                                        (g?.name || '').toLowerCase().includes((searchQuery || '').toLowerCase())
-                                    )
-                                    .slice(0, 5)
-                                    .map(group => (
-                                        <div
-                                            key={group.id}
-                                            className={styles.groupItem}
-                                            onClick={() => toggleGroup(group.id)}
-                                        >
-                                            <div className={styles.groupInfo}>
-                                                <span className={styles.groupName}>
-                                                    {group.name || 'Unnamed Group'}
-                                                    {group.isCommunityAnnounce ? (
-                                                        <span className={styles.announcementBadge} title={group.canPost ? "Community Announcements (Admin)" : "Community Announcements (Read Only)"}>
-                                                            {group.canPost ? "📢 Announcement (Admin)" : "📢 Announcement (Read Only)"}
-                                                        </span>
-                                                    ) : group.isAnnounce ? (
-                                                        <span className={styles.restrictedBadge} title={group.canPost ? "Admin-Only Group (Admin)" : "Admin-Only Group (Read Only)"}>
-                                                            {group.canPost ? "🔒 Admin-Only" : "🔒 Read-Only"}
-                                                        </span>
-                                                    ) : (
-                                                        <span className={styles.groupBadge} title="Standard Group (All participants can post)">
-                                                            👥 Group
-                                                        </span>
-                                                    )}
+                                filteredVisible.map(item => (
+                                    <div
+                                        key={item.id}
+                                        className={styles.groupItem}
+                                        onClick={() => toggleRecipient(item.id)}
+                                    >
+                                        <div className={styles.groupInfo}>
+                                            <span className={styles.groupName}>
+                                                {item.name || item.phone || item.id}
+                                                {item.type === 'contact' ? (
+                                                    <span className={styles.groupBadge} title="Individual Contact">
+                                                        <Phone size={10} style={{ display: 'inline', marginRight: '3px' }} />Contact
+                                                    </span>
+                                                ) : item.isCommunityAnnounce ? (
+                                                    <span className={styles.announcementBadge} title={item.canPost ? "Community Announcements (Admin)" : "Community Announcements (Read Only)"}>
+                                                        {item.canPost ? "📢 Announcement (Admin)" : "📢 Announcement (Read Only)"}
+                                                    </span>
+                                                ) : item.isAnnounce ? (
+                                                    <span className={styles.restrictedBadge} title={item.canPost ? "Admin-Only Group (Admin)" : "Admin-Only Group (Read Only)"}>
+                                                        {item.canPost ? "🔒 Admin-Only" : "🔒 Read-Only"}
+                                                    </span>
+                                                ) : (
+                                                    <span className={styles.groupBadge} title="Standard Group">
+                                                        👥 Group
+                                                    </span>
+                                                )}
+                                            </span>
+                                            {item.type === 'contact' && item.phone && (
+                                                <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', display: 'block', marginTop: '2px' }}>
+                                                    +{item.phone}
                                                 </span>
-                                            </div>
-                                            <div className={styles.addItem}>
-                                                <CheckCircle2 size={16} className={styles.addIcon} />
-                                            </div>
+                                            )}
                                         </div>
-                                    ))
+                                        <div className={styles.addItem}>
+                                            <CheckCircle2 size={16} className={styles.addIcon} />
+                                        </div>
+                                    </div>
+                                ))
                             )}
-                            {!loadingGroups && groups.filter(g => !selectedGroups.includes(g?.id) && (g?.name || '').toLowerCase().includes((searchQuery || '').toLowerCase())).length === 0 && (
-                                <div className={styles.emptyList}>No matching groups</div>
+                            {!loadingGroups && !loadingContacts && filteredVisible.length === 0 && (
+                                <div className={styles.emptyList}>
+                                    {recipientTab === 'contacts'
+                                        ? 'No contacts found. Contacts appear after WhatsApp syncs.'
+                                        : 'No matching recipients'}
+                                </div>
                             )}
                         </div>
                     </div>

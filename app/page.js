@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession, signIn, signOut } from "next-auth/react";
 import BroadcastTool from '@/components/BroadcastTool';
 import Modal from '@/components/Modal';
@@ -10,6 +10,7 @@ export default function Home() {
     const { data: session, status: authStatus } = useSession();
     const [statusData, setStatusData] = useState({ status: 'disconnected', qr: null });
     const [loading, setLoading] = useState(true);
+    const lastConnectedAt = useRef(null); // timestamp of last known 'connected' state
 
     // Login Form State (Moved to top level to follow Rules of Hooks)
     const [isSignUp, setIsSignUp] = useState(false);
@@ -38,6 +39,9 @@ export default function Home() {
             const res = await fetch('/api/status');
             const data = await res.json();
             if (data.error) throw new Error(data.error);
+            if (data.status === 'connected') {
+                lastConnectedAt.current = Date.now();
+            }
             setStatusData(data);
         } catch (err) {
             console.error('[WhatsApp Home] Failed to fetch status:', err);
@@ -79,10 +83,24 @@ export default function Home() {
     useEffect(() => {
         if (statusData.status === 'connected' && groups.length === 0) {
             fetchGroups();
-        } else if (statusData.status !== 'connected') {
-            setGroups([]);
+        } else if (statusData.status !== 'connected' && statusData.status !== 'connecting') {
+            // Only clear groups if we're not just briefly reconnecting
+            const msSinceConnected = lastConnectedAt.current ? Date.now() - lastConnectedAt.current : Infinity;
+            if (msSinceConnected > 20000) {
+                setGroups([]);
+            }
         }
     }, [statusData.status]);
+
+    // Compute the effective display status:
+    // If we just lost connection but were connected <15s ago, show 'connecting' (grace period)
+    // to avoid flashing the "Get QR Code" screen during normal auto-reconnect
+    const effectiveStatus = (() => {
+        if (statusData.status !== 'disconnected') return statusData.status;
+        const msSinceConnected = lastConnectedAt.current ? Date.now() - lastConnectedAt.current : Infinity;
+        if (msSinceConnected < 15000) return 'connecting'; // grace period
+        return 'disconnected';
+    })();
 
     const handleConnect = async () => {
         if (!API_KEY) {
@@ -285,7 +303,7 @@ export default function Home() {
         <div className="app-container">
             <header className="app-header">
                 <div className="app-header-left">
-                    <div className={`status-dot ${statusData.status}`} />
+                    <div className={`status-dot ${effectiveStatus}`} />
                     <h1 className="gold-glow" style={{ fontSize: 'clamp(1rem, 4vw, 1.4rem)', color: 'var(--primary-indigo)', fontWeight: '700', letterSpacing: '-0.03em', margin: 0, whiteSpace: 'nowrap' }}>
                         ELITE <span style={{ color: 'var(--text-pure)', fontWeight: '300' }}>BROADCASTER</span>
                     </h1>
@@ -328,7 +346,7 @@ export default function Home() {
             </header>
             <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 <BroadcastTool
-                    status={statusData.status}
+                    status={effectiveStatus}
                     qr={statusData.qr}
                     onConnect={handleConnect}
                     onLogout={handleLogout}
