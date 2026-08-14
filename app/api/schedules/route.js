@@ -150,8 +150,8 @@ export async function PUT(req) {
             return NextResponse.json({ error: 'Schedule not found' }, { status: 404 });
         }
 
-        if (existing.status !== 'pending' && existing.status !== 'failed') {
-            return NextResponse.json({ error: 'Only pending or failed schedules can be modified' }, { status: 400 });
+        if (existing.status === 'processing') {
+            return NextResponse.json({ error: 'Schedules currently being processed cannot be modified' }, { status: 400 });
         }
 
         const updateData = {};

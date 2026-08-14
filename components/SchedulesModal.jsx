@@ -221,7 +221,7 @@ export default function SchedulesModal({ isOpen, onClose, groups }) {
                                                     </td>
                                                     <td>
                                                         <div className={styles.actions}>
-                                                            {(item.status === 'pending' || item.status === 'failed') && (
+                                                            {item.status !== 'processing' && (
                                                                 <button
                                                                     onClick={() => startEdit(item)}
                                                                     className={`${styles.actionBtn} ${styles.editBtn}`}
@@ -273,7 +273,7 @@ export default function SchedulesModal({ isOpen, onClose, groups }) {
                                             <div className={styles.scheduleCardRow}>
                                                 <span className={`${styles.badge} ${styles[item.status]}`}>{item.status.toUpperCase()}</span>
                                                 <div className={styles.actions}>
-                                                    {(item.status === 'pending' || item.status === 'failed') && (
+                                                    {item.status !== 'processing' && (
                                                         <button onClick={() => startEdit(item)} className={`${styles.actionBtn} ${styles.editBtn}`} title="Edit">
                                                             <Edit2 size={15} />
                                                         </button>
