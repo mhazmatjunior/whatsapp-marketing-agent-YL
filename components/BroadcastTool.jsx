@@ -22,7 +22,7 @@ import styles from './BroadcastTool.module.css';
 import Modal from './Modal';
 import JoinsModal from './JoinsModal';
 
-const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loadingGroups, fetchGroups }) => {
+const BroadcastTool = ({ status, qr, hasCreds, onConnect, onLogout, groups, setGroups, loadingGroups, fetchGroups }) => {
     const [selectedGroups, setSelectedGroups] = useState([]);
     const [message, setMessage] = useState('');
     const [file, setFile] = useState(null);
@@ -134,10 +134,14 @@ const BroadcastTool = ({ status, qr, onConnect, onLogout, groups, setGroups, loa
             {status === 'disconnected' && !qr && (
                 <div className={styles.emptyState}>
                     <QrCode size={48} className={styles.icon} />
-                    <h3>Connect WhatsApp</h3>
-                    <p>Link your device to start broadcasting marketing messages.</p>
+                    <h3>{hasCreds ? 'Resume WhatsApp Session' : 'Connect WhatsApp'}</h3>
+                    <p>
+                        {hasCreds 
+                            ? 'Your session credentials are saved. Click Connect to resume broadcasting.'
+                            : 'Link your device to start broadcasting marketing messages.'}
+                    </p>
                     <button onClick={onConnect} className={styles.primaryBtn}>
-                        Get QR Code
+                        {hasCreds ? 'Connect WhatsApp' : 'Get QR Code'}
                     </button>
                 </div>
             )}

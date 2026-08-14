@@ -351,6 +351,7 @@ export default function Home() {
                 <BroadcastTool
                     status={effectiveStatus}
                     qr={statusData.qr}
+                    hasCreds={statusData.hasCreds}
                     onConnect={handleConnect}
                     onLogout={handleLogout}
                     groups={groups}
